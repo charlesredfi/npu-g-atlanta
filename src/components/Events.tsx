@@ -17,61 +17,90 @@ export function Events() {
           </p>
         </div>
 
-        <div className="mt-6 grid items-stretch gap-4 md:mt-12 md:gap-8 lg:grid-cols-[minmax(240px,0.72fr)_1.45fr]">
-          {/* Compact event card on mobile; fuller card from md up */}
-          <article className="flex flex-col overflow-hidden bg-white ring-1 ring-line lg:min-h-[40rem]">
-            <div className="relative aspect-[21/9] shrink-0 md:aspect-[16/10]">
-              <Image
-                src={upcomingMeeting.image}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-              />
+        <div className="mt-5 flex flex-col gap-3 md:mt-12 md:grid md:items-stretch md:gap-8 lg:grid-cols-[minmax(240px,0.72fr)_1.45fr]">
+          {/* Mobile: ultra-compact event strip. Desktop: fuller card. */}
+          <article className="overflow-hidden bg-white ring-1 ring-line lg:flex lg:min-h-[40rem] lg:flex-col">
+            {/* Mobile compact row */}
+            <div className="flex gap-3 p-3 md:hidden">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-soft">
+                <Image
+                  src={upcomingMeeting.image}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="display text-[10px] tracking-[0.16em] text-accent">
+                  {upcomingMeeting.type}
+                </p>
+                <h3 className="display mt-1 text-base leading-tight text-navy">
+                  {upcomingMeeting.title}
+                </h3>
+                <p className="serif mt-1 truncate text-xs text-muted">
+                  {upcomingMeeting.date} · {upcomingMeeting.time}
+                </p>
+                <a
+                  href={upcomingMeeting.rsvpHref}
+                  className="display mt-2 inline-flex bg-cta px-3 py-1.5 text-[10px] tracking-[0.14em] text-white"
+                >
+                  RSVP
+                </a>
+              </div>
             </div>
-            <div className="flex flex-1 flex-col p-4 md:p-8">
-              <p className="display text-[10px] tracking-[0.18em] text-accent md:text-xs">
-                {upcomingMeeting.type}
-              </p>
-              <h3 className="display mt-2 text-xl leading-tight text-navy md:mt-4 md:text-3xl">
-                {upcomingMeeting.title}
-              </h3>
-              <dl className="serif mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm text-muted md:mt-5 md:block md:space-y-3 md:text-base">
-                <div>
-                  <dt className="display text-[10px] tracking-[0.14em] text-accent">
-                    Event Title
-                  </dt>
-                  <dd className="mt-0.5 text-navy md:mt-1">
-                    {upcomingMeeting.eventTitle}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="display text-[10px] tracking-[0.14em] text-accent">
-                    Date
-                  </dt>
-                  <dd className="mt-0.5 text-navy md:mt-1">{upcomingMeeting.date}</dd>
-                </div>
-                <div>
-                  <dt className="display text-[10px] tracking-[0.14em] text-accent">
-                    Time
-                  </dt>
-                  <dd className="mt-0.5 text-navy md:mt-1">{upcomingMeeting.time}</dd>
-                </div>
-                <div>
-                  <dt className="display text-[10px] tracking-[0.14em] text-accent">
-                    Location
-                  </dt>
-                  <dd className="mt-0.5 text-navy md:mt-1">
-                    {upcomingMeeting.location}
-                  </dd>
-                </div>
-              </dl>
-              <a
-                href={upcomingMeeting.rsvpHref}
-                className="btn-cta mt-4 inline-flex w-full items-center justify-center px-5 py-3 text-xs tracking-[0.18em] md:mt-7 md:px-8 md:py-6 md:text-lg"
-              >
-                RSVP
-              </a>
+
+            {/* Desktop / tablet card */}
+            <div className="hidden md:flex md:h-full md:flex-col">
+              <div className="relative aspect-[16/10] shrink-0">
+                <Image
+                  src={upcomingMeeting.image}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+              </div>
+              <div className="flex flex-1 flex-col p-8">
+                <p className="display text-xs tracking-[0.18em] text-accent">
+                  {upcomingMeeting.type}
+                </p>
+                <h3 className="display mt-4 text-3xl leading-tight text-navy">
+                  {upcomingMeeting.title}
+                </h3>
+                <dl className="serif mt-5 flex-1 space-y-3 text-base text-muted">
+                  <div>
+                    <dt className="display text-[10px] tracking-[0.14em] text-accent">
+                      Event Title
+                    </dt>
+                    <dd className="mt-1 text-navy">{upcomingMeeting.eventTitle}</dd>
+                  </div>
+                  <div>
+                    <dt className="display text-[10px] tracking-[0.14em] text-accent">
+                      Date
+                    </dt>
+                    <dd className="mt-1 text-navy">{upcomingMeeting.date}</dd>
+                  </div>
+                  <div>
+                    <dt className="display text-[10px] tracking-[0.14em] text-accent">
+                      Time
+                    </dt>
+                    <dd className="mt-1 text-navy">{upcomingMeeting.time}</dd>
+                  </div>
+                  <div>
+                    <dt className="display text-[10px] tracking-[0.14em] text-accent">
+                      Location
+                    </dt>
+                    <dd className="mt-1 text-navy">{upcomingMeeting.location}</dd>
+                  </div>
+                </dl>
+                <a
+                  href={upcomingMeeting.rsvpHref}
+                  className="btn-cta mt-7 inline-flex w-full items-center justify-center px-8 py-6 text-lg tracking-[0.18em]"
+                >
+                  RSVP
+                </a>
+              </div>
             </div>
           </article>
 

@@ -61,19 +61,72 @@ function MeetingDetails({
       <div>
         <h3
           className={`display leading-tight text-navy ${
-            compact ? "text-lg" : "text-xl md:text-2xl"
+            compact ? "text-base" : "text-xl md:text-2xl"
           }`}
         >
           No meeting in July
         </h3>
         <p
-          className={`serif mt-2 leading-relaxed text-muted ${
-            compact ? "text-sm" : "mt-3 text-base"
+          className={`serif leading-relaxed text-muted ${
+            compact ? "mt-1 text-xs" : "mt-3 text-base"
           }`}
         >
-          NPU-G does not meet in July. Monthly Zoom meetings resume in August on
-          the third Thursday.
+          NPU-G does not meet in July. Meetings resume in August on the third
+          Thursday.
         </p>
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Image
+            src="/media/zoom-logo.png"
+            alt="Zoom"
+            width={1024}
+            height={537}
+            className="h-4 w-auto rounded-[2px] object-contain"
+          />
+          <h3 className="display text-sm leading-tight text-navy">
+            {zoomMeeting.title}
+          </h3>
+        </div>
+        <p className="serif text-xs text-muted">
+          {MONTHS[meetingDate.getMonth()]} {meetingDate.getDate()},{" "}
+          {meetingDate.getFullYear()} · {zoomMeeting.time}
+        </p>
+        <p className="serif text-xs leading-relaxed text-navy">
+          ID {zoomMeeting.meetingId} · Dial{" "}
+          <a
+            href={`tel:+1${zoomMeeting.dialIn.replace(/\D/g, "")}`}
+            className="underline decoration-accent underline-offset-2"
+          >
+            {zoomMeeting.dialIn}
+          </a>
+        </p>
+        <p className="display text-[10px] font-bold uppercase tracking-[0.06em] text-accent">
+          {meetingAgenda.note}
+        </p>
+        <div className="flex gap-2 pt-1">
+          <a
+            href={meetingAgenda.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="display flex-1 border border-navy px-2 py-2 text-center text-[10px] tracking-[0.12em] text-navy"
+          >
+            Agenda
+          </a>
+          <a
+            href={zoomMeeting.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="display flex-1 bg-cta px-2 py-2 text-center text-[10px] tracking-[0.12em] text-white"
+          >
+            Join Zoom
+          </a>
+        </div>
       </div>
     );
   }
@@ -85,29 +138,17 @@ function MeetingDetails({
         alt="Zoom"
         width={1024}
         height={537}
-        className={`w-auto rounded-[3px] object-contain ${
-          compact ? "mb-2 h-5" : "mb-3 h-6"
-        }`}
+        className="mb-3 h-6 w-auto rounded-[3px] object-contain"
       />
-      <h3
-        className={`display leading-tight text-navy ${
-          compact ? "text-lg" : "text-xl md:text-2xl"
-        }`}
-      >
+      <h3 className="display text-xl leading-tight text-navy md:text-2xl">
         {zoomMeeting.title}
       </h3>
-      <p className={`serif text-muted ${compact ? "mt-2 text-sm" : "mt-3 text-base"}`}>
+      <p className="serif mt-3 text-base text-muted">
         {MONTHS[meetingDate.getMonth()]} {meetingDate.getDate()},{" "}
         {meetingDate.getFullYear()}
       </p>
-      <p className={`serif text-muted ${compact ? "mt-0.5 text-sm" : "mt-1 text-base"}`}>
-        {zoomMeeting.time}
-      </p>
-      <ul
-        className={`serif space-y-1 text-navy ${
-          compact ? "mt-3 text-sm" : "mt-4 space-y-2 text-base"
-        }`}
-      >
+      <p className="serif mt-1 text-base text-muted">{zoomMeeting.time}</p>
+      <ul className="serif mt-4 space-y-2 text-base text-navy">
         <li>Meeting ID {zoomMeeting.meetingId}</li>
         <li>
           Dial-In{" "}
@@ -120,20 +161,10 @@ function MeetingDetails({
         </li>
         <li>Access Code {zoomMeeting.accessCode}</li>
       </ul>
-      <p
-        className={`display font-bold uppercase tracking-[0.06em] text-accent ${
-          compact
-            ? "mt-3 text-[11px]"
-            : "mt-4 text-xs md:whitespace-nowrap md:text-sm"
-        }`}
-      >
+      <p className="display mt-4 text-xs font-bold uppercase tracking-[0.06em] text-accent md:whitespace-nowrap md:text-sm">
         {meetingAgenda.note}
       </p>
-      <div
-        className={`flex flex-col gap-2 sm:flex-row sm:flex-wrap ${
-          compact ? "mt-4" : "mt-5 gap-3"
-        }`}
-      >
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <a
           href={meetingAgenda.href}
           target="_blank"
@@ -202,61 +233,55 @@ export function EventsCalendar({ className = "" }: { className?: string }) {
 
   return (
     <>
-      {/* Mobile: compact meeting card (no full grid) */}
+      {/* Mobile: ultra-compact stacked meeting panel */}
       <div
         className={`overflow-hidden bg-white ring-1 ring-line md:hidden ${className}`}
       >
-        <div className="flex items-center justify-between gap-2 border-b border-line bg-soft px-4 py-3">
+        <div className="flex items-center justify-between gap-2 bg-soft px-3 py-2">
           <button
             type="button"
             onClick={() => selectMonth(monthIndex - 1)}
-            className="display px-2 py-1.5 text-[10px] tracking-[0.14em] text-navy"
+            className="display px-2 py-1 text-[10px] tracking-[0.12em] text-navy"
             aria-label="Previous month"
           >
-            Prev
+            ‹
           </button>
-          <p className="display text-sm tracking-[0.06em] text-navy">
-            {monthLabel}
-          </p>
+          <label className="flex min-w-0 flex-1 items-center justify-center">
+            <span className="sr-only">Month</span>
+            <select
+              value={monthIndex}
+              onChange={(e) => {
+                const index = Number(e.target.value);
+                setMonthIndex(index);
+                setSelectedKey(dateKey(thirdThursday(year, index)));
+              }}
+              className="display max-w-full bg-transparent text-center text-xs tracking-[0.08em] text-navy outline-none"
+            >
+              {MONTHS.map((month, index) => (
+                <option key={month} value={index}>
+                  {month} {year}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             onClick={() => selectMonth(monthIndex + 1)}
-            className="display px-2 py-1.5 text-[10px] tracking-[0.14em] text-navy"
+            className="display px-2 py-1 text-[10px] tracking-[0.12em] text-navy"
             aria-label="Next month"
           >
-            Next
+            ›
           </button>
         </div>
 
-        <div className="flex gap-1 overflow-x-auto border-b border-line px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {MONTHS.map((month, index) => {
-            const active = index === monthIndex;
-            return (
-              <button
-                key={month}
-                type="button"
-                onClick={() => {
-                  setMonthIndex(index);
-                  setSelectedKey(dateKey(thirdThursday(year, index)));
-                }}
-                className={`display shrink-0 px-2.5 py-1.5 text-[10px] tracking-[0.12em] ${
-                  active ? "bg-navy text-white" : "text-navy/50"
-                }`}
-              >
-                {month.slice(0, 3)}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="border-b border-line px-4 py-3">
-          <p className="display text-[10px] tracking-[0.16em] text-accent">
-            Monthly meeting
+        <div className="border-t border-line px-3 py-2">
+          <p className="display text-[9px] tracking-[0.14em] text-accent">
+            {isJulyRecess ? "July recess" : "Next Zoom meeting"}
           </p>
-          <p className="display mt-1 text-base text-navy">{meetingLabel}</p>
+          <p className="display mt-0.5 text-sm text-navy">{meetingLabel}</p>
         </div>
 
-        <div className="p-4">
+        <div className="border-t border-line px-3 py-3">
           <MeetingDetails
             isJulyRecess={isJulyRecess}
             meetingDate={meetingDate}
