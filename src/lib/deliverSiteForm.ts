@@ -67,6 +67,14 @@ async function deliverViaFormSubmitTo(
     );
   }
 
+  // FormSubmit returns HTTP 200 with success:"false" when the inbox still needs activation.
+  if (payload.success === false || payload.success === "false") {
+    throw new Error(
+      payload.message ||
+        `FormSubmit needs activation for ${to}. Check that inbox (and spam) for an "Activate Form" email from FormSubmit, click the link, then try again.`,
+    );
+  }
+
   return true;
 }
 
