@@ -24,9 +24,7 @@ export function Neighborhoods() {
             13 Neighborhoods
           </h2>
           <p className="serif mt-5 text-lg leading-relaxed text-white/75 md:text-xl">
-            One community across NPU-G, listed alphabetically. Where a
-            neighborhood association or HOA site is available, the name links
-            out.
+            View our community across NPU-G, listed alphabetically below:
           </p>
         </div>
 
