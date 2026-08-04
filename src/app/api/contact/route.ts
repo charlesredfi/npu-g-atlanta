@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { appendToGoogleSheet } from "@/lib/googleSheet";
 
 type Payload = {
   type?: "contact" | "merch" | "newsletter";
@@ -148,11 +149,35 @@ export async function POST(request: Request) {
       fields.message = message || "(none)";
     }
 
+    // Archive every valid submission in the shared Google Sheet first.
+    let sheetLogged = false;
+    try {
+      const sheetResult = await appendToGoogleSheet({
+        formType: type,
+        name,
+        email,
+        neighborhood,
+        message: type === "newsletter" ? undefined : message || "(none)",
+        request:
+          type === "newsletter" ? "Subscribe to monthly newsletter" : undefined,
+      });
+      sheetLogged = sheetResult.ok;
+      if (sheetResult.skipped) {
+        console.warn(
+          "GOOGLE_SHEETS_WEBHOOK_URL is not set; submission was not archived to the sheet.",
+        );
+      }
+    } catch (sheetError) {
+      console.error("Google Sheet archive failed:", sheetError);
+      // Still attempt email delivery so the form is not blocked by sheet issues.
+    }
+
     const sentResend = await sendWithResend(to, cc, subject, text, email);
     if (sentResend) {
       return NextResponse.json({
         ok: true,
         via: "resend",
+        sheetLogged,
         recipients: recipients.length,
       });
     }
@@ -166,6 +191,7 @@ export async function POST(request: Request) {
       cc: cc.join(","),
       subject,
       fields,
+      sheetLogged,
     });
   } catch (error) {
     console.error("Contact API error:", error);
