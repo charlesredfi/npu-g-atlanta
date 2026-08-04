@@ -75,41 +75,41 @@ export function Leadership() {
             <p className="display text-xs tracking-[0.16em] text-accent">
               City Council Districts
             </p>
-            <p className="serif mt-2 text-base leading-relaxed text-navy md:text-lg">
-              District 3,{" "}
-              <a
-                href="https://citycouncil.atlantaga.gov/council-members/byron-amos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="display !normal-case underline decoration-accent underline-offset-4 transition hover:text-cta"
-              >
-                Byron Amos
-              </a>
-              <span className="mx-4 text-navy/40 md:mx-5" aria-hidden>
-                |
-              </span>
-              District 9,{" "}
-              <a
-                href="https://citycouncil.atlantaga.gov/council-members/dustin-hillis"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="display !normal-case underline decoration-accent underline-offset-4 transition hover:text-cta"
-              >
-                Dustin Hillis
-              </a>
-              <span className="mx-4 text-navy/40 md:mx-5" aria-hidden>
-                |
-              </span>
-              District 10,{" "}
-              <a
-                href="https://citycouncil.atlantaga.gov/council-members/andrea-l-boone"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="display !normal-case underline decoration-accent underline-offset-4 transition hover:text-cta"
-              >
-                Andrea L. Boone
-              </a>
-            </p>
+            <ul className="serif mt-3 space-y-2 text-base leading-relaxed text-navy md:text-lg">
+              <li>
+                District 3,{" "}
+                <a
+                  href="https://citycouncil.atlantaga.gov/council-members/byron-amos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="display !normal-case underline decoration-accent underline-offset-4 transition hover:text-cta"
+                >
+                  Byron Amos
+                </a>
+              </li>
+              <li>
+                District 9,{" "}
+                <a
+                  href="https://citycouncil.atlantaga.gov/council-members/dustin-hillis"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="display !normal-case underline decoration-accent underline-offset-4 transition hover:text-cta"
+                >
+                  Dustin Hillis
+                </a>
+              </li>
+              <li>
+                District 10,{" "}
+                <a
+                  href="https://citycouncil.atlantaga.gov/council-members/andrea-l-boone"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="display !normal-case underline decoration-accent underline-offset-4 transition hover:text-cta"
+                >
+                  Andrea L. Boone
+                </a>
+              </li>
+            </ul>
           </div>
           <a
             href="#contact"
