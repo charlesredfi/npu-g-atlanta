@@ -13,7 +13,8 @@ type ApiResponse = {
   via?: string;
   error?: string;
   fallback?: "formsubmit";
-  recipients?: string[];
+  to?: string;
+  cc?: string;
   subject?: string;
   fields?: Record<string, string>;
 };
@@ -29,13 +30,14 @@ function friendlyClientError(detail: string) {
   return detail;
 }
 
-async function deliverViaFormSubmitTo(
-  to: string,
-  subject: string,
-  fields: Record<string, string>,
-) {
+async function deliverViaFormSubmit(config: {
+  to: string;
+  cc?: string;
+  subject: string;
+  fields: Record<string, string>;
+}) {
   const response = await fetch(
-    `https://formsubmit.co/ajax/${encodeURIComponent(to)}`,
+    `https://formsubmit.co/ajax/${encodeURIComponent(config.to)}`,
     {
       method: "POST",
       headers: {
@@ -43,10 +45,11 @@ async function deliverViaFormSubmitTo(
         Accept: "application/json",
       },
       body: JSON.stringify({
-        ...fields,
-        _subject: subject,
+        ...config.fields,
+        _subject: config.subject,
         _template: "table",
         _captcha: "false",
+        ...(config.cc ? { _cc: config.cc } : {}),
       }),
     },
   );
@@ -56,14 +59,12 @@ async function deliverViaFormSubmitTo(
   try {
     payload = JSON.parse(raw) as typeof payload;
   } catch {
-    throw new Error(friendlyClientError(raw || `Form delivery failed for ${to}.`));
+    throw new Error(friendlyClientError(raw || "Form delivery failed."));
   }
 
   if (!response.ok) {
     throw new Error(
-      friendlyClientError(
-        payload.message || raw || `Form delivery failed for ${to}.`,
-      ),
+      friendlyClientError(payload.message || raw || "Form delivery failed."),
     );
   }
 
@@ -71,14 +72,14 @@ async function deliverViaFormSubmitTo(
   if (payload.success === false || payload.success === "false") {
     throw new Error(
       payload.message ||
-        `FormSubmit needs activation for ${to}. Check that inbox (and spam) for an "Activate Form" email from FormSubmit, click the link, then try again.`,
+        `FormSubmit needs activation for ${config.to}. Check that inbox (and spam) for an "Activate Form" email from FormSubmit, click the link, then try again.`,
     );
   }
 
   return true;
 }
 
-/** Prefer Resend via API; fall back to browser FormSubmit (one real send per recipient). */
+/** Prefer Resend via API; fall back to one FormSubmit send (Chair To, others CC). */
 export async function deliverSiteForm(payload: FormPayload) {
   const response = await fetch("/api/contact", {
     method: "POST",
@@ -92,34 +93,14 @@ export async function deliverSiteForm(payload: FormPayload) {
     return { via: data.via || "api" };
   }
 
-  if (
-    data.fallback === "formsubmit" &&
-    data.recipients?.length &&
-    data.subject &&
-    data.fields
-  ) {
-    const results = await Promise.allSettled(
-      data.recipients.map((to) =>
-        deliverViaFormSubmitTo(to, data.subject!, data.fields!),
-      ),
-    );
-
-    const failures = results.filter((result) => result.status === "rejected");
-    if (failures.length === results.length) {
-      const first = failures[0];
-      throw new Error(
-        first.status === "rejected"
-          ? String(first.reason?.message || first.reason)
-          : "Unable to send your message.",
-      );
-    }
-
-    // Partial success still counts as delivered (some inboxes may need FormSubmit activation).
-    return {
-      via: "formsubmit",
-      delivered: results.length - failures.length,
-      attempted: results.length,
-    };
+  if (data.fallback === "formsubmit" && data.to && data.subject && data.fields) {
+    await deliverViaFormSubmit({
+      to: data.to,
+      cc: data.cc,
+      subject: data.subject,
+      fields: data.fields,
+    });
+    return { via: "formsubmit" };
   }
 
   throw new Error(

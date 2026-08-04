@@ -31,7 +31,8 @@ function friendlyError(detail: string) {
 }
 
 async function sendWithResend(
-  recipients: string[],
+  to: string,
+  cc: string[],
   subject: string,
   text: string,
   replyTo: string,
@@ -40,7 +41,7 @@ async function sendWithResend(
   const from =
     process.env.RESEND_FROM_EMAIL || "NPU-G Atlanta <onboarding@resend.dev>";
 
-  if (!apiKey || recipients.length === 0) return false;
+  if (!apiKey || !to) return false;
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -50,7 +51,8 @@ async function sendWithResend(
     },
     body: JSON.stringify({
       from,
-      to: recipients,
+      to: [to],
+      ...(cc.length ? { cc } : {}),
       reply_to: replyTo,
       subject,
       text,
@@ -77,7 +79,6 @@ export async function POST(request: Request) {
     const message = asString(body.message);
     const neighborhood = asString(body.neighborhood);
     const item = asString(body.item);
-    const size = asString(body.size);
     const recipients = getContactEmails();
 
     if (!name || !email) {
@@ -111,6 +112,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const [to, ...cc] = recipients;
+
     const subject =
       type === "merch"
         ? `NPU-G Merch Waitlist: ${item || "Interest"}`
@@ -123,8 +126,6 @@ export async function POST(request: Request) {
       `Name: ${name}`,
       `Email: ${email}`,
       neighborhood ? `Neighborhood: ${neighborhood}` : null,
-      item ? `Item: ${item}` : null,
-      size ? `Size: ${size}` : null,
       type === "newsletter"
         ? "Request: Subscribe to monthly newsletter"
         : message
@@ -134,27 +135,37 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join("\n");
 
-    const sentResend = await sendWithResend(recipients, subject, text, email);
-    if (sentResend) {
-      return NextResponse.json({ ok: true, via: "resend", recipients: recipients.length });
+    // Keep the FormSubmit table lean: no empty/unused columns like item/size.
+    const fields: Record<string, string> = {
+      name,
+      email,
+      formType: type,
+    };
+    if (neighborhood) fields.neighborhood = neighborhood;
+    if (type === "newsletter") {
+      fields.request = "Subscribe to monthly newsletter";
+    } else {
+      fields.message = message || "(none)";
     }
 
-    // FormSubmit blocks Vercel IPs with Cloudflare. Let the browser deliver
-    // one real message to each CONTACT_EMAIL recipient (not CC).
+    const sentResend = await sendWithResend(to, cc, subject, text, email);
+    if (sentResend) {
+      return NextResponse.json({
+        ok: true,
+        via: "resend",
+        recipients: recipients.length,
+      });
+    }
+
+    // FormSubmit blocks Vercel IPs with Cloudflare. Browser sends one email:
+    // Chair as To, remaining CONTACT_EMAIL addresses as CC.
     return NextResponse.json({
       ok: false,
       fallback: "formsubmit",
-      recipients,
+      to,
+      cc: cc.join(","),
       subject,
-      fields: {
-        name,
-        email,
-        neighborhood,
-        item,
-        size,
-        message: message || "(none)",
-        formType: type,
-      },
+      fields,
     });
   } catch (error) {
     console.error("Contact API error:", error);
