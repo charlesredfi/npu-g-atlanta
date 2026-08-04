@@ -174,7 +174,7 @@ export function Priorities() {
             loop
             playsInline
             preload="auto"
-            poster="/media/group-npu-signs.jpg"
+            poster="/media/shirley-clarke-franklin-park.jpg"
             disableRemotePlayback
             aria-hidden
             // @ts-expect-error legacy iOS attribute
