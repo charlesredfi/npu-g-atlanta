@@ -183,7 +183,7 @@ export async function POST(request: Request) {
       }
     } catch (sheetError) {
       console.error("Google Sheet archive failed:", sheetError);
-      // Still attempt email delivery so the form is not blocked by sheet issues.
+      // Keep email delivery working even if the sheet webhook is misconfigured.
     }
 
     const sentResend = await sendWithResend(to, cc, subject, text, email);
