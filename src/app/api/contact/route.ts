@@ -165,6 +165,7 @@ export async function POST(request: Request) {
 
     // Archive every valid submission in the shared Google Sheet first.
     let sheetLogged = false;
+    let sheetErrorMessage: string | undefined;
     try {
       const sheetResult = await appendToGoogleSheet({
         formType: type,
@@ -180,10 +181,14 @@ export async function POST(request: Request) {
         console.warn(
           "GOOGLE_SHEETS_WEBHOOK_URL is not set; submission was not archived to the sheet.",
         );
+        sheetErrorMessage = "GOOGLE_SHEETS_WEBHOOK_URL is not set";
       }
     } catch (sheetError) {
       console.error("Google Sheet archive failed:", sheetError);
-      // Keep email delivery working even if the sheet webhook is misconfigured.
+      sheetErrorMessage =
+        sheetError instanceof Error
+          ? sheetError.message
+          : "Google Sheet archive failed.";
     }
 
     const sentResend = await sendWithResend(to, cc, subject, text, email);
@@ -192,6 +197,7 @@ export async function POST(request: Request) {
         ok: true,
         via: "resend",
         sheetLogged,
+        sheetError: sheetErrorMessage,
         recipients: recipients.length,
       });
     }
@@ -206,6 +212,7 @@ export async function POST(request: Request) {
       subject,
       fields,
       sheetLogged,
+      sheetError: sheetErrorMessage,
     });
   } catch (error) {
     console.error("Contact API error:", error);
