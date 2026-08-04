@@ -13,8 +13,7 @@ type ApiResponse = {
   via?: string;
   error?: string;
   fallback?: "formsubmit";
-  to?: string;
-  cc?: string;
+  recipients?: string[];
   subject?: string;
   fields?: Record<string, string>;
 };
@@ -30,14 +29,13 @@ function friendlyClientError(detail: string) {
   return detail;
 }
 
-async function deliverViaFormSubmit(config: {
-  to: string;
-  cc?: string;
-  subject: string;
-  fields: Record<string, string>;
-}) {
+async function deliverViaFormSubmitTo(
+  to: string,
+  subject: string,
+  fields: Record<string, string>,
+) {
   const response = await fetch(
-    `https://formsubmit.co/ajax/${encodeURIComponent(config.to)}`,
+    `https://formsubmit.co/ajax/${encodeURIComponent(to)}`,
     {
       method: "POST",
       headers: {
@@ -45,11 +43,10 @@ async function deliverViaFormSubmit(config: {
         Accept: "application/json",
       },
       body: JSON.stringify({
-        ...config.fields,
-        _subject: config.subject,
+        ...fields,
+        _subject: subject,
         _template: "table",
         _captcha: "false",
-        ...(config.cc ? { _cc: config.cc } : {}),
       }),
     },
   );
@@ -59,19 +56,21 @@ async function deliverViaFormSubmit(config: {
   try {
     payload = JSON.parse(raw) as typeof payload;
   } catch {
-    throw new Error(friendlyClientError(raw || "Form delivery failed."));
+    throw new Error(friendlyClientError(raw || `Form delivery failed for ${to}.`));
   }
 
   if (!response.ok) {
     throw new Error(
-      friendlyClientError(payload.message || raw || "Form delivery failed."),
+      friendlyClientError(
+        payload.message || raw || `Form delivery failed for ${to}.`,
+      ),
     );
   }
 
   return true;
 }
 
-/** Prefer Resend via API; fall back to browser FormSubmit (avoids Vercel→Cloudflare block). */
+/** Prefer Resend via API; fall back to browser FormSubmit (one real send per recipient). */
 export async function deliverSiteForm(payload: FormPayload) {
   const response = await fetch("/api/contact", {
     method: "POST",
@@ -85,14 +84,34 @@ export async function deliverSiteForm(payload: FormPayload) {
     return { via: data.via || "api" };
   }
 
-  if (data.fallback === "formsubmit" && data.to && data.subject && data.fields) {
-    await deliverViaFormSubmit({
-      to: data.to,
-      cc: data.cc,
-      subject: data.subject,
-      fields: data.fields,
-    });
-    return { via: "formsubmit" };
+  if (
+    data.fallback === "formsubmit" &&
+    data.recipients?.length &&
+    data.subject &&
+    data.fields
+  ) {
+    const results = await Promise.allSettled(
+      data.recipients.map((to) =>
+        deliverViaFormSubmitTo(to, data.subject!, data.fields!),
+      ),
+    );
+
+    const failures = results.filter((result) => result.status === "rejected");
+    if (failures.length === results.length) {
+      const first = failures[0];
+      throw new Error(
+        first.status === "rejected"
+          ? String(first.reason?.message || first.reason)
+          : "Unable to send your message.",
+      );
+    }
+
+    // Partial success still counts as delivered (some inboxes may need FormSubmit activation).
+    return {
+      via: "formsubmit",
+      delivered: results.length - failures.length,
+      attempted: results.length,
+    };
   }
 
   throw new Error(

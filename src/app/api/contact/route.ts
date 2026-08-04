@@ -139,13 +139,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, via: "resend", recipients: recipients.length });
     }
 
-    // FormSubmit blocks Vercel IPs with Cloudflare. Let the browser deliver instead.
-    const [to, ...cc] = recipients;
+    // FormSubmit blocks Vercel IPs with Cloudflare. Let the browser deliver
+    // one real message to each CONTACT_EMAIL recipient (not CC).
     return NextResponse.json({
       ok: false,
       fallback: "formsubmit",
-      to,
-      cc: cc.join(","),
+      recipients,
       subject,
       fields: {
         name,
