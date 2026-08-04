@@ -15,11 +15,36 @@ export function Priorities() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (playing) {
-      void video.play().catch(() => undefined);
-    } else {
-      video.pause();
-    }
+
+    // Browsers require muted + playsInline before autoplay is allowed.
+    video.defaultMuted = true;
+    video.muted = true;
+    video.playsInline = true;
+
+    const tryPlay = () => {
+      if (!playing) {
+        video.pause();
+        return;
+      }
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        void playPromise.catch(() => {
+          // Retry once metadata is ready (common on mobile Safari).
+          const onReady = () => {
+            void video.play().catch(() => undefined);
+            video.removeEventListener("canplay", onReady);
+          };
+          video.addEventListener("canplay", onReady);
+        });
+      }
+    };
+
+    tryPlay();
+    video.addEventListener("loadeddata", tryPlay);
+
+    return () => {
+      video.removeEventListener("loadeddata", tryPlay);
+    };
   }, [playing]);
 
   return (
@@ -120,6 +145,7 @@ export function Priorities() {
             muted
             loop
             playsInline
+            preload="auto"
             poster="/media/group-npu-signs.jpg"
             aria-hidden
           >
