@@ -180,8 +180,6 @@ export function Priorities() {
             poster="/media/atlanta-city-poster.jpg"
             disableRemotePlayback
             aria-hidden
-            // @ts-expect-error legacy iOS attribute
-            webkit-playsinline="true"
             onCanPlay={() => {
               const video = videoRef.current;
               if (!video || !playing) return;
