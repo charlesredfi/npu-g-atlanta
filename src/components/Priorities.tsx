@@ -164,8 +164,11 @@ export function Priorities() {
           </ul>
         </div>
 
-        {/* Clear City of Atlanta video — no blue wash */}
-        <div className="relative min-h-[380px] bg-navy sm:min-h-[480px] lg:min-h-0">
+        {/* Clear City of Atlanta video — city still shows until video plays */}
+        <div
+          className="relative min-h-[380px] bg-navy bg-cover bg-center sm:min-h-[480px] lg:min-h-0"
+          style={{ backgroundImage: "url(/media/atlanta-city-poster.jpg)" }}
+        >
           <video
             ref={videoRef}
             className="absolute inset-0 h-full w-full object-cover"
@@ -174,7 +177,7 @@ export function Priorities() {
             loop
             playsInline
             preload="auto"
-            poster="/media/shirley-clarke-franklin-park.jpg"
+            poster="/media/atlanta-city-poster.jpg"
             disableRemotePlayback
             aria-hidden
             // @ts-expect-error legacy iOS attribute
