@@ -6,15 +6,15 @@ export function About() {
     <section className="relative overflow-hidden bg-surface pb-10 md:pb-12 lg:pb-14">
       <div className="bg-navy">
         <div className="mx-auto max-w-7xl px-5 py-7 md:px-8 md:py-9 lg:py-10">
-          <h2 className="display text-center text-4xl text-white md:text-5xl lg:text-6xl">
+          <h2 className="display text-center text-3xl leading-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
             A seat at Atlanta&apos;s planning table
           </h2>
         </div>
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-5 py-10 md:px-8 lg:py-12">
-        <div className="flex flex-row items-center gap-5 md:gap-8">
-          <div className="min-w-0 flex-[0.95]">
+      <div className="relative mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10 lg:py-12">
+        <div className="flex flex-col items-stretch gap-6 md:flex-row md:items-center md:gap-8">
+          <div className="min-w-0 md:flex-[0.95]">
             <p className="serif text-base leading-relaxed text-muted md:text-xl">
               NPU-G brings together 13 Westside neighborhoods as one community,
               reviewing decisions for land use &amp; licenses. Neighborhood Planning
@@ -23,11 +23,11 @@ export function About() {
 
             <ul className="mt-6 space-y-5">
               {aboutPoints.map((point) => (
-                <li key={point.title} className="border-l-2 border-accent pl-5">
-                  <h3 className="display text-lg tracking-[0.08em] text-navy">
+                <li key={point.title} className="border-l-2 border-accent pl-4 md:pl-5">
+                  <h3 className="display text-base tracking-[0.08em] text-navy md:text-lg">
                     {point.title}
                   </h3>
-                  <p className="serif mt-2 text-base leading-relaxed text-muted">
+                  <p className="serif mt-2 text-sm leading-relaxed text-muted md:text-base">
                     {point.text}
                   </p>
                 </li>
@@ -35,14 +35,14 @@ export function About() {
             </ul>
           </div>
 
-          <div className="w-[54%] max-w-[640px] shrink-0">
+          <div className="w-full shrink-0 md:w-[54%] md:max-w-[640px]">
             <Image
               src="/media/npu-g-map-v3.png"
               alt="NPU-G Atlanta map showing thirteen neighborhoods"
               width={790}
               height={528}
               className="h-auto w-full"
-              sizes="(max-width: 1024px) 54vw, 640px"
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 54vw, 640px"
               priority
             />
           </div>
@@ -84,8 +84,8 @@ export function About() {
                     </p>
                   </div>
                   <h4
-                    className={`display mt-3 text-lg leading-none tracking-[0.04em] text-navy md:text-xl ${
-                      isZoom ? "whitespace-nowrap" : ""
+                    className={`display mt-3 text-base leading-snug tracking-[0.04em] text-navy md:text-xl md:leading-none ${
+                      isZoom ? "md:whitespace-nowrap" : ""
                     }`}
                   >
                     {isZoom ? (
@@ -123,7 +123,7 @@ export function About() {
                         </p>
                       ))}
                       {isZoom ? (
-                        <p className="display mt-3 whitespace-nowrap text-sm font-bold uppercase tracking-[0.06em] text-accent">
+                        <p className="display mt-3 text-[11px] font-bold uppercase tracking-[0.04em] text-accent sm:text-sm sm:tracking-[0.06em] md:whitespace-nowrap">
                           {meetingAgenda.note}
                         </p>
                       ) : null}
