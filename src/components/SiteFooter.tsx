@@ -46,9 +46,9 @@ export function SiteFooter() {
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-5 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-8">
           <p>© {new Date().getFullYear()} NPU-G Atlanta. All rights reserved.</p>
-          <p className="inline-flex flex-wrap items-center text-sm text-muted">
-            <span>
-              Website curated &amp; developed by{" "}
+          <p className="flex flex-col items-start gap-1 text-sm text-muted md:inline-flex md:flex-row md:flex-wrap md:items-center md:gap-0">
+            <span>Website curated &amp; developed by</span>
+            <span className="inline-flex items-center md:ml-1">
               <a
                 href="https://redfipro.com"
                 target="_blank"
@@ -57,14 +57,14 @@ export function SiteFooter() {
               >
                 REDFi Production, Inc.
               </a>
+              <Image
+                src="/media/redfi-diamond-flame.png"
+                alt=""
+                width={28}
+                height={34}
+                className="ml-1.5 h-6 w-auto object-contain"
+              />
             </span>
-            <Image
-              src="/media/redfi-diamond-flame.png"
-              alt=""
-              width={28}
-              height={34}
-              className="ml-1.5 h-6 w-auto object-contain"
-            />
           </p>
           <a
             href="#top"
