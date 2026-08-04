@@ -20,14 +20,18 @@ export function News() {
     const data = new FormData(form);
 
     try {
-      await deliverSiteForm({
+      const result = await deliverSiteForm({
         type: "newsletter",
         name: String(data.get("name") || ""),
         email: String(data.get("email") || ""),
         neighborhood: String(data.get("neighborhood") || ""),
       });
       setStatus("success");
-      setMessage("You're on the list. Watch your inbox for the next NPU-G newsletter.");
+      setMessage(
+        result.via === "sheet"
+          ? "You're on the list and saved to the archive. Email notification is still finishing setup."
+          : "You're on the list. Watch your inbox for the next NPU-G newsletter.",
+      );
       form.reset();
     } catch (error) {
       setStatus("error");

@@ -18,7 +18,7 @@ export function Contact() {
     const data = new FormData(form);
 
     try {
-      await deliverSiteForm({
+      const result = await deliverSiteForm({
         type: "contact",
         name: String(data.get("name") || ""),
         email: String(data.get("email") || ""),
@@ -26,7 +26,11 @@ export function Contact() {
         message: String(data.get("message") || ""),
       });
       setStatus("success");
-      setMessage("Message sent; thank you for reaching out to NPU-G.");
+      setMessage(
+        result.via === "sheet"
+          ? "Message received and saved. Email notification is still finishing setup."
+          : "Message sent; thank you for reaching out to NPU-G.",
+      );
       form.reset();
     } catch (error) {
       setStatus("error");

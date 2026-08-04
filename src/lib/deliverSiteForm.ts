@@ -17,6 +17,7 @@ type ApiResponse = {
   cc?: string;
   subject?: string;
   fields?: Record<string, string>;
+  sheetLogged?: boolean;
 };
 
 function friendlyClientError(detail: string) {
@@ -28,6 +29,10 @@ function friendlyClientError(detail: string) {
     return "Email delivery is temporarily unavailable. Please try again shortly, or email chair@npugatlanta.org directly.";
   }
   return detail;
+}
+
+function isActivationMessage(message: string) {
+  return /activat/i.test(message);
 }
 
 async function deliverViaFormSubmit(config: {
@@ -70,10 +75,12 @@ async function deliverViaFormSubmit(config: {
 
   // FormSubmit returns HTTP 200 with success:"false" when the inbox still needs activation.
   if (payload.success === false || payload.success === "false") {
-    throw new Error(
+    const message =
       payload.message ||
-        `FormSubmit needs activation for ${config.to}. Check that inbox (and spam) for an "Activate Form" email from FormSubmit, click the link, then try again.`,
-    );
+      `FormSubmit needs activation for ${config.to}. Check that inbox (and spam) for an "Activate Form" email, click the link, then try again.`;
+    const error = new Error(message) as Error & { code?: string };
+    error.code = isActivationMessage(message) ? "FORMSUBMIT_ACTIVATION" : "FORMSUBMIT_ERROR";
+    throw error;
   }
 
   return true;
@@ -87,23 +94,56 @@ export async function deliverSiteForm(payload: FormPayload) {
     body: JSON.stringify(payload),
   });
 
-  const data = (await response.json()) as ApiResponse;
+  let data: ApiResponse;
+  try {
+    data = (await response.json()) as ApiResponse;
+  } catch {
+    throw new Error("Unable to send your message. The server returned an invalid response.");
+  }
 
   if (response.ok && data.ok) {
-    return { via: data.via || "api" };
+    return { via: data.via || "api", sheetLogged: Boolean(data.sheetLogged) };
   }
 
   if (data.fallback === "formsubmit" && data.to && data.subject && data.fields) {
-    await deliverViaFormSubmit({
-      to: data.to,
-      cc: data.cc,
-      subject: data.subject,
-      fields: data.fields,
-    });
-    return { via: "formsubmit" };
+    try {
+      await deliverViaFormSubmit({
+        to: data.to,
+        cc: data.cc,
+        subject: data.subject,
+        fields: data.fields,
+      });
+      return { via: "formsubmit", sheetLogged: Boolean(data.sheetLogged) };
+    } catch (error) {
+      // Sheet archive is the durable record. If it saved, count the submission as received
+      // even when FormSubmit is waiting on inbox activation.
+      if (data.sheetLogged) {
+        return {
+          via: "sheet",
+          sheetLogged: true,
+          emailPending:
+            error instanceof Error && isActivationMessage(error.message)
+              ? "activation"
+              : "failed",
+        };
+      }
+
+      if (error instanceof Error && isActivationMessage(error.message)) {
+        throw new Error(
+          `Almost there: FormSubmit needs one-time activation for ${data.to}. Open that inbox (check Spam), click "Activate Form", then submit again.`,
+        );
+      }
+
+      throw error instanceof Error
+        ? error
+        : new Error("Unable to send your message.");
+    }
   }
 
   throw new Error(
-    friendlyClientError(data.error || "Unable to send your message."),
+    friendlyClientError(
+      data.error ||
+        `Unable to send your message.${data.sheetLogged === false ? " Google Sheet archive is not connected yet." : ""}`,
+    ),
   );
 }
