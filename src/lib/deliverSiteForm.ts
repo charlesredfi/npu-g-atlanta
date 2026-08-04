@@ -77,7 +77,7 @@ async function deliverViaFormSubmit(config: {
   if (payload.success === false || payload.success === "false") {
     const message =
       payload.message ||
-      `FormSubmit needs activation for ${config.to}. Check that inbox (and spam) for an "Activate Form" email, click the link, then try again.`;
+        `FormSubmit needs activation for ${config.to}. Check that inbox (and spam) for an "Activate Form" email, click the link, then try again.`;
     const error = new Error(message) as Error & { code?: string };
     error.code = isActivationMessage(message) ? "FORMSUBMIT_ACTIVATION" : "FORMSUBMIT_ERROR";
     throw error;
@@ -86,7 +86,7 @@ async function deliverViaFormSubmit(config: {
   return true;
 }
 
-/** Prefer Resend via API; fall back to one FormSubmit send (Chair To, others CC). */
+/** Prefer Resend via API; fall back to one FormSubmit send (1stchair To, others CC). */
 export async function deliverSiteForm(payload: FormPayload) {
   const response = await fetch("/api/contact", {
     method: "POST",

@@ -16,10 +16,24 @@ function asString(value: unknown) {
 }
 
 function getContactEmails() {
-  return (process.env.CONTACT_EMAIL || "")
+  const emails = (process.env.CONTACT_EMAIL || "")
     .split(",")
     .map((email) => email.trim())
     .filter(Boolean);
+
+  // Temporary primary: 1st Vice-Chair receives To; everyone else is CC.
+  const preferred = "1stchair@npugatlanta.org";
+  const preferredMatch = emails.find(
+    (email) => email.toLowerCase() === preferred.toLowerCase(),
+  );
+  if (!preferredMatch) return emails;
+
+  return [
+    preferredMatch,
+    ...emails.filter(
+      (email) => email.toLowerCase() !== preferred.toLowerCase(),
+    ),
+  ];
 }
 
 function friendlyError(detail: string) {
@@ -183,7 +197,7 @@ export async function POST(request: Request) {
     }
 
     // FormSubmit blocks Vercel IPs with Cloudflare. Browser sends one email:
-    // Chair as To, remaining CONTACT_EMAIL addresses as CC.
+    // 1stchair as To, remaining CONTACT_EMAIL addresses as CC.
     return NextResponse.json({
       ok: false,
       fallback: "formsubmit",
