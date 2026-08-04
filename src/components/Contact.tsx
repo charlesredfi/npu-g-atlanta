@@ -55,7 +55,7 @@ export function Contact() {
           <ul className="mt-8 space-y-6">
             <li>
               <p className="display text-xs tracking-[0.18em] text-accent">
-                NPU Chairperson
+                NPU-G Chairperson
               </p>
               <p className="display mt-2 text-lg tracking-[0.04em] text-white">
                 Torrey Sumlin
