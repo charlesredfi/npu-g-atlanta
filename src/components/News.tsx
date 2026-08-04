@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { newsItems, newsletterNeighborhoods } from "@/lib/content";
+import { deliverSiteForm } from "@/lib/deliverSiteForm";
 
 export function News() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
@@ -19,20 +20,12 @@ export function News() {
     const data = new FormData(form);
 
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "newsletter",
-          name: data.get("name"),
-          email: data.get("email"),
-          neighborhood: data.get("neighborhood"),
-        }),
+      await deliverSiteForm({
+        type: "newsletter",
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        neighborhood: String(data.get("neighborhood") || ""),
       });
-      const payload = (await response.json()) as { error?: string; ok?: boolean };
-      if (!response.ok) {
-        throw new Error(payload.error || "Unable to subscribe.");
-      }
       setStatus("success");
       setMessage("You're on the list. Watch your inbox for the next NPU-G newsletter.");
       form.reset();

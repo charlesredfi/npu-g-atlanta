@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { deliverSiteForm } from "@/lib/deliverSiteForm";
 
 export function Contact() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
@@ -17,21 +18,13 @@ export function Contact() {
     const data = new FormData(form);
 
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "contact",
-          name: data.get("name"),
-          email: data.get("email"),
-          neighborhood: data.get("neighborhood"),
-          message: data.get("message"),
-        }),
+      await deliverSiteForm({
+        type: "contact",
+        name: String(data.get("name") || ""),
+        email: String(data.get("email") || ""),
+        neighborhood: String(data.get("neighborhood") || ""),
+        message: String(data.get("message") || ""),
       });
-      const payload = (await response.json()) as { error?: string; ok?: boolean };
-      if (!response.ok) {
-        throw new Error(payload.error || "Unable to send message.");
-      }
       setStatus("success");
       setMessage("Message sent; thank you for reaching out to NPU-G.");
       form.reset();

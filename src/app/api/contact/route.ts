@@ -21,6 +21,15 @@ function getContactEmails() {
     .filter(Boolean);
 }
 
+function friendlyError(detail: string) {
+  if (detail.includes("<!DOCTYPE") || detail.includes("Just a moment")) {
+    return "Email delivery is temporarily unavailable. Please try again shortly, or email chair@npugatlanta.org directly.";
+  }
+  return detail.length > 180
+    ? "Unable to deliver this submission. Please try again or email chair@npugatlanta.org."
+    : detail;
+}
+
 async function sendWithResend(
   recipients: string[],
   subject: string,
@@ -50,47 +59,10 @@ async function sendWithResend(
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`Resend failed: ${detail}`);
+    throw new Error(friendlyError(`Resend failed: ${detail}`));
   }
 
   return true;
-}
-
-async function sendWithFormSubmit(
-  recipients: string[],
-  subject: string,
-  fields: Record<string, string>,
-) {
-  if (recipients.length === 0) return false;
-
-  const results = await Promise.all(
-    recipients.map(async (to) => {
-      const response = await fetch(
-        `https://formsubmit.co/ajax/${encodeURIComponent(to)}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            ...fields,
-            _subject: subject,
-            _template: "table",
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(`FormSubmit failed for ${to}: ${detail}`);
-      }
-
-      return true;
-    }),
-  );
-
-  return results.every(Boolean);
 }
 
 export async function POST(request: Request) {
@@ -129,11 +101,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (recipients.length === 0 && !process.env.RESEND_API_KEY) {
+    if (recipients.length === 0) {
       return NextResponse.json(
         {
           error:
-            "Form delivery is not configured yet. Add CONTACT_EMAIL to .env.local (see .env.example).",
+            "Form delivery is not configured yet. Add CONTACT_EMAIL to your environment.",
         },
         { status: 503 },
       );
@@ -163,8 +135,19 @@ export async function POST(request: Request) {
       .join("\n");
 
     const sentResend = await sendWithResend(recipients, subject, text, email);
-    if (!sentResend) {
-      await sendWithFormSubmit(recipients, subject, {
+    if (sentResend) {
+      return NextResponse.json({ ok: true, via: "resend", recipients: recipients.length });
+    }
+
+    // FormSubmit blocks Vercel IPs with Cloudflare. Let the browser deliver instead.
+    const [to, ...cc] = recipients;
+    return NextResponse.json({
+      ok: false,
+      fallback: "formsubmit",
+      to,
+      cc: cc.join(","),
+      subject,
+      fields: {
         name,
         email,
         neighborhood,
@@ -172,18 +155,17 @@ export async function POST(request: Request) {
         size,
         message: message || "(none)",
         formType: type,
-      });
-    }
-
-    return NextResponse.json({ ok: true, recipients: recipients.length });
+      },
+    });
   } catch (error) {
     console.error("Contact API error:", error);
     return NextResponse.json(
       {
-        error:
+        error: friendlyError(
           error instanceof Error
             ? error.message
             : "Unable to deliver this submission.",
+        ),
       },
       { status: 500 },
     );
