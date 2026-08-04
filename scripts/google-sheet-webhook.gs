@@ -1,9 +1,9 @@
 /**
  * NPU-G Contact Form → Google Sheet webhook
  *
- * After editing this script in Apps Script:
- * Deploy → Manage deployments → Edit (pencil) → New version → Deploy
- * (A brand-new URL is only needed for the first deployment.)
+ * IMPORTANT after pasting updates:
+ * Deploy → Manage deployments → pencil icon → Version: New version → Deploy
+ * Keep the same Web app URL in Vercel (GOOGLE_SHEETS_WEBHOOK_URL).
  */
 
 var HEADERS = [
@@ -28,36 +28,52 @@ function ensureHeaderRow(sheet) {
   }
 }
 
+function writeRow(data) {
+  var sheet = getTargetSheet();
+  ensureHeaderRow(sheet);
+  sheet.appendRow([
+    new Date(),
+    data.formType || data.type || "",
+    data.name || "",
+    data.email || "",
+    data.neighborhood || "",
+    data.message || data.request || "",
+  ]);
+  return ContentService.createTextOutput(
+    JSON.stringify({ ok: true }),
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+function errorResponse(err) {
+  return ContentService.createTextOutput(
+    JSON.stringify({ ok: false, error: String(err) }),
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+/** Used by the website (Vercel cannot reliably POST through Apps Script redirects). */
+function doGet(e) {
+  try {
+    var data = e && e.parameter ? e.parameter : {};
+    return writeRow(data);
+  } catch (err) {
+    return errorResponse(err);
+  }
+}
+
+/** Kept for manual/browser tests that POST JSON. */
 function doPost(e) {
   try {
     var data = {};
     if (e && e.postData && e.postData.contents) {
       data = JSON.parse(e.postData.contents);
     }
-
-    var sheet = getTargetSheet();
-    ensureHeaderRow(sheet);
-
-    sheet.appendRow([
-      new Date(),
-      data.formType || data.type || "",
-      data.name || "",
-      data.email || "",
-      data.neighborhood || "",
-      data.message || data.request || "",
-    ]);
-
-    return ContentService.createTextOutput(
-      JSON.stringify({ ok: true }),
-    ).setMimeType(ContentService.MimeType.JSON);
+    return writeRow(data);
   } catch (err) {
-    return ContentService.createTextOutput(
-      JSON.stringify({ ok: false, error: String(err) }),
-    ).setMimeType(ContentService.MimeType.JSON);
+    return errorResponse(err);
   }
 }
 
-/** Optional smoke test from the Apps Script editor (Run → ensureHeaders). */
+/** Optional: Run this once from the Apps Script editor to create headers. */
 function ensureHeaders() {
   ensureHeaderRow(getTargetSheet());
 }
