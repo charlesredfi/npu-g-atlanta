@@ -7,6 +7,18 @@ export type SheetSubmission = {
   request?: string;
 };
 
+function summarizeWebhookResponse(raw: string) {
+  const title = raw.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim();
+  const pre = raw.match(/<pre[^>]*>([^<]*)<\/pre>/i)?.[1]?.trim();
+  const plain = raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return (
+    title ||
+    pre ||
+    plain.slice(0, 240) ||
+    "Empty response from Apps Script."
+  );
+}
+
 /**
  * Appends a contact/newsletter row via the Apps Script web app bound to:
  * https://docs.google.com/spreadsheets/d/10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ
@@ -38,7 +50,7 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
 
   if (!response.ok) {
     throw new Error(
-      `Google Sheet append failed (${response.status}): ${raw.slice(0, 200)}`,
+      `Google Sheet append failed (${response.status}): ${summarizeWebhookResponse(raw)}`,
     );
   }
 
@@ -47,7 +59,7 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
     parsed = JSON.parse(raw) as typeof parsed;
   } catch {
     throw new Error(
-      `Google Sheet webhook did not return JSON. Update/redeploy the Apps Script (new version) from scripts/google-sheet-webhook.gs. Response: ${raw.slice(0, 120)}`,
+      `Google Sheet webhook did not return JSON. ${summarizeWebhookResponse(raw)}`,
     );
   }
 
