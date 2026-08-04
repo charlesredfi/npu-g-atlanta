@@ -16,34 +16,62 @@ export function Priorities() {
     const video = videoRef.current;
     if (!video) return;
 
-    // Browsers require muted + playsInline before autoplay is allowed.
+    // iOS Safari: mute + playsInline must be set as properties AND attributes.
     video.defaultMuted = true;
     video.muted = true;
+    video.volume = 0;
     video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "true");
+
+    let cancelled = false;
 
     const tryPlay = () => {
+      if (cancelled) return;
       if (!playing) {
         video.pause();
         return;
       }
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        void playPromise.catch(() => {
-          // Retry once metadata is ready (common on mobile Safari).
-          const onReady = () => {
-            void video.play().catch(() => undefined);
-            video.removeEventListener("canplay", onReady);
-          };
-          video.addEventListener("canplay", onReady);
-        });
-      }
+      void video.play().then(
+        () => {
+          if (!cancelled) setPlaying(true);
+        },
+        () => {
+          // Autoplay blocked (common in Low Power Mode). Leave paused until gesture.
+        },
+      );
     };
 
     tryPlay();
-    video.addEventListener("loadeddata", tryPlay);
+
+    const onReady = () => tryPlay();
+    video.addEventListener("loadedmetadata", onReady);
+    video.addEventListener("loadeddata", onReady);
+    video.addEventListener("canplay", onReady);
+
+    // Play when the Priorities video scrolls into view (mobile often loads below fold).
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) tryPlay();
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(video);
+
+    // First user gesture anywhere unlocks autoplay on strict mobile browsers.
+    const unlock = () => tryPlay();
+    document.addEventListener("touchstart", unlock, { passive: true });
+    document.addEventListener("scroll", unlock, { passive: true });
 
     return () => {
-      video.removeEventListener("loadeddata", tryPlay);
+      cancelled = true;
+      video.removeEventListener("loadedmetadata", onReady);
+      video.removeEventListener("loadeddata", onReady);
+      video.removeEventListener("canplay", onReady);
+      observer.disconnect();
+      document.removeEventListener("touchstart", unlock);
+      document.removeEventListener("scroll", unlock);
     };
   }, [playing]);
 
@@ -147,14 +175,34 @@ export function Priorities() {
             playsInline
             preload="auto"
             poster="/media/group-npu-signs.jpg"
+            disableRemotePlayback
             aria-hidden
+            // @ts-expect-error legacy iOS attribute
+            webkit-playsinline="true"
+            onCanPlay={() => {
+              const video = videoRef.current;
+              if (!video || !playing) return;
+              video.muted = true;
+              void video.play().catch(() => undefined);
+            }}
           >
             <source src={CITY_VIDEO} type="video/mp4" />
           </video>
 
           <button
             type="button"
-            onClick={() => setPlaying((value) => !value)}
+            onClick={() => {
+              const video = videoRef.current;
+              setPlaying((value) => {
+                const next = !value;
+                if (video) {
+                  video.muted = true;
+                  if (next) void video.play().catch(() => undefined);
+                  else video.pause();
+                }
+                return next;
+              });
+            }}
             className="absolute right-5 top-5 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-accent bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/55"
             aria-label={playing ? "Pause background video" : "Play background video"}
           >
