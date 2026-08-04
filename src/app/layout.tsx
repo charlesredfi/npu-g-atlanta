@@ -5,19 +5,22 @@ import "./globals.css";
 const display = Oswald({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["500", "700"],
+  display: "swap",
 });
 
 const serif = Source_Serif_4({
   variable: "--font-serif",
   subsets: ["latin"],
   weight: ["400", "600"],
+  display: "swap",
 });
 
 const ui = DM_Sans({
   variable: "--font-ui",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {

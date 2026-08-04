@@ -35,6 +35,7 @@ export function Hero() {
           className="object-cover object-center"
           sizes="100vw"
           priority
+          quality={75}
         />
         <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(11,31,58,0.88)_0%,rgba(11,31,58,0.72)_45%,rgba(11,31,58,0.45)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_15%,rgba(0,163,224,0.22),transparent_40%)]" />

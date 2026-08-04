@@ -10,9 +10,30 @@ const CITY_VIDEO = "/media/atlanta-skyline.mp4";
 export function Priorities() {
   const [activeId, setActiveId] = useState<PriorityId>("cleanup");
   const [playing, setPlaying] = useState(true);
+  const [loadVideo, setLoadVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoShellRef = useRef<HTMLDivElement>(null);
+
+  // Defer fetching the 4.8MB city video until the section is near the viewport.
+  useEffect(() => {
+    const shell = videoShellRef.current;
+    if (!shell) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setLoadVideo(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "240px 0px", threshold: 0.01 },
+    );
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
+    if (!loadVideo) return;
     const video = videoRef.current;
     if (!video) return;
 
@@ -50,19 +71,19 @@ export function Priorities() {
     video.addEventListener("loadeddata", onReady);
     video.addEventListener("canplay", onReady);
 
-    // Play when the Priorities video scrolls into view (mobile often loads below fold).
+    // Play in view; pause off-screen to cut CPU/GPU lag while scrolling.
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) tryPlay();
+        const visible = entries.some((entry) => entry.isIntersecting);
+        if (visible) tryPlay();
+        else video.pause();
       },
       { threshold: 0.15 },
     );
     observer.observe(video);
 
-    // First user gesture anywhere unlocks autoplay on strict mobile browsers.
     const unlock = () => tryPlay();
-    document.addEventListener("touchstart", unlock, { passive: true });
-    document.addEventListener("scroll", unlock, { passive: true });
+    document.addEventListener("touchstart", unlock, { passive: true, once: true });
 
     return () => {
       cancelled = true;
@@ -71,9 +92,8 @@ export function Priorities() {
       video.removeEventListener("canplay", onReady);
       observer.disconnect();
       document.removeEventListener("touchstart", unlock);
-      document.removeEventListener("scroll", unlock);
     };
-  }, [playing]);
+  }, [loadVideo, playing]);
 
   return (
     <section
@@ -166,6 +186,7 @@ export function Priorities() {
 
         {/* Clear City of Atlanta video — city still shows until video plays */}
         <div
+          ref={videoShellRef}
           className="relative min-h-[380px] bg-navy bg-cover bg-center sm:min-h-[480px] lg:min-h-0"
           style={{ backgroundImage: "url(/media/atlanta-city-poster.jpg)" }}
         >
@@ -176,7 +197,7 @@ export function Priorities() {
             muted
             loop
             playsInline
-            preload="auto"
+            preload="none"
             poster="/media/atlanta-city-poster.jpg"
             disableRemotePlayback
             aria-hidden
@@ -187,7 +208,7 @@ export function Priorities() {
               void video.play().catch(() => undefined);
             }}
           >
-            <source src={CITY_VIDEO} type="video/mp4" />
+            {loadVideo ? <source src={CITY_VIDEO} type="video/mp4" /> : null}
           </video>
 
           <button
@@ -198,8 +219,10 @@ export function Priorities() {
                 const next = !value;
                 if (video) {
                   video.muted = true;
-                  if (next) void video.play().catch(() => undefined);
-                  else video.pause();
+                  if (next) {
+                    if (!loadVideo) setLoadVideo(true);
+                    void video.play().catch(() => undefined);
+                  } else video.pause();
                 }
                 return next;
               });

@@ -43,7 +43,7 @@ export function About() {
               height={528}
               className="h-auto w-full"
               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 54vw, 640px"
-              priority
+              loading="lazy"
             />
           </div>
         </div>

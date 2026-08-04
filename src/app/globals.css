@@ -64,6 +64,8 @@ body {
 
 .section-anchor {
   scroll-margin-top: 6.5rem;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
 }
 
 /* Shared vertical rhythm for nav-linked sections. */
