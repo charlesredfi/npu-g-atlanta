@@ -24,9 +24,23 @@ const ui = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "NPU-G Atlanta | 13 Neighborhoods, One Community",
+  metadataBase: new URL("https://npu-g-atlanta.vercel.app"),
+  title: "NPU-G; 13 Neighborhoods, One Community",
   description:
     "Neighborhood Planning Unit G: About Us, News, 13 Neighborhoods, Events, Merch, and Contact for northwest Atlanta.",
+  openGraph: {
+    title: "NPU-G; 13 Neighborhoods, One Community",
+    description:
+      "Neighborhood Planning Unit G: About Us, News, 13 Neighborhoods, Events, Merch, and Contact for northwest Atlanta.",
+    type: "website",
+    siteName: "NPU-G Atlanta",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NPU-G; 13 Neighborhoods, One Community",
+    description:
+      "Neighborhood Planning Unit G: About Us, News, 13 Neighborhoods, Events, Merch, and Contact for northwest Atlanta.",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
