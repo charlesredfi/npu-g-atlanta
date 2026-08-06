@@ -23,16 +23,13 @@ function summarizeWebhookResponse(raw: string) {
  * Appends a row via the Apps Script web app bound to:
  * https://docs.google.com/spreadsheets/d/10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ
  *
- * The Apps Script routes by formType:
+ * Sends one JSON `data` query param so tab routing cannot be lost:
  *   newsletter → "newsletter" tab
  *   contact / merch → "inquiry" tab
  *
- * Apps Script /exec endpoints redirect POST→GET and break doPost from Vercel.
- * We send fields as query params to doGet, which Apps Script handles correctly.
- *
- * Requires GOOGLE_SHEETS_WEBHOOK_URL in the environment.
- * After updating scripts/google-sheet-webhook.gs, redeploy that Apps Script
- * (Manage deployments → New version) so tab routing takes effect.
+ * Requires GOOGLE_SHEETS_WEBHOOK_URL.
+ * After updating scripts/google-sheet-webhook.gs, redeploy Apps Script
+ * (Manage deployments → New version).
  */
 function tabForFormType(formType: string) {
   return formType.toLowerCase() === "newsletter" ? "newsletter" : "inquiry";
@@ -43,7 +40,19 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
   if (!webhookUrl) return { ok: false as const, skipped: true as const };
 
   const tab = tabForFormType(entry.formType);
+  const payload = {
+    tab,
+    formType: entry.formType,
+    name: entry.name,
+    email: entry.email,
+    neighborhood: entry.neighborhood || "",
+    message: entry.message || entry.request || "",
+    request: entry.request || "",
+  };
+
   const params = new URLSearchParams({
+    data: JSON.stringify(payload),
+    // Keep flat params too for older script versions during transition.
     tab,
     formType: entry.formType,
     name: entry.name,
@@ -66,7 +75,12 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
     );
   }
 
-  let parsed: { ok?: boolean; error?: string } = {};
+  let parsed: {
+    ok?: boolean;
+    error?: string;
+    sheet?: string;
+    tab?: string;
+  } = {};
   try {
     parsed = JSON.parse(raw) as typeof parsed;
   } catch {
@@ -81,5 +95,17 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
     );
   }
 
-  return { ok: true as const, skipped: false as const };
+  const writtenTab = (parsed.tab || parsed.sheet || "").toLowerCase();
+  if (writtenTab && !writtenTab.includes(tab)) {
+    throw new Error(
+      `Google Sheet wrote to '${parsed.sheet || parsed.tab}' but expected tab '${tab}'. Redeploy scripts/google-sheet-webhook.gs as a New version.`,
+    );
+  }
+
+  return {
+    ok: true as const,
+    skipped: false as const,
+    tab: parsed.tab || tab,
+    sheet: parsed.sheet || tab,
+  };
 }

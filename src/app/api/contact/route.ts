@@ -165,6 +165,7 @@ export async function POST(request: Request) {
 
     // Archive every valid submission in the shared Google Sheet first.
     let sheetLogged = false;
+    let sheetTab: string | undefined;
     let sheetErrorMessage: string | undefined;
     try {
       const sheetResult = await appendToGoogleSheet({
@@ -177,6 +178,7 @@ export async function POST(request: Request) {
           type === "newsletter" ? "Subscribe to monthly newsletter" : undefined,
       });
       sheetLogged = sheetResult.ok;
+      sheetTab = "tab" in sheetResult ? sheetResult.tab : undefined;
       if (sheetResult.skipped) {
         console.warn(
           "GOOGLE_SHEETS_WEBHOOK_URL is not set; submission was not archived to the sheet.",
@@ -197,6 +199,7 @@ export async function POST(request: Request) {
         ok: true,
         via: "resend",
         sheetLogged,
+        sheetTab,
         sheetError: sheetErrorMessage,
         recipients: recipients.length,
       });
@@ -212,6 +215,7 @@ export async function POST(request: Request) {
       subject,
       fields,
       sheetLogged,
+      sheetTab,
       sheetError: sheetErrorMessage,
     });
   } catch (error) {
