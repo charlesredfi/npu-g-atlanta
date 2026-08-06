@@ -1,28 +1,20 @@
 /**
- * NPU-G forms → ONE Google spreadsheet, TWO tabs
+ * NPU-G forms → ONE spreadsheet, TWO separate tabs (not one tab with labels)
  *
- * Tab names (exact, lowercase preferred):
- *   inquiry     ← contact + merch
- *   newsletter  ← newsletter signups
+ * Creates/uses exact tab names:
+ *   inquiry
+ *   newsletter
  *
- * Website sends a single query param:
- *   ?data=<url-encoded JSON>
- * Example JSON:
- *   {"tab":"newsletter","formType":"newsletter","name":"...","email":"..."}
- *
- * SETUP (required after every code change):
- * 1. Sheet → Extensions → Apps Script
- * 2. Delete all code, paste this file, Save
- * 3. Dropdown → ensureTabsAndHeaders → Run (allow permissions)
- * 4. Deploy → Manage deployments → pencil → New version → Deploy
- *    Keep the SAME /exec URL in Vercel
+ * SETUP after paste:
+ * 1. Extensions → Apps Script → replace all → Save
+ * 2. Run ensureTabsAndHeaders
+ * 3. Deploy → Manage deployments → New version → Deploy
  */
 
 var SPREADSHEET_ID = "10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ";
 
 var HEADERS = [
   "Timestamp",
-  "Tab",
   "Type",
   "Name",
   "Email",
@@ -34,128 +26,132 @@ function getSpreadsheet() {
   return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
-function listTabNames(ss) {
+function listTabs(ss) {
   var sheets = ss.getSheets();
-  var names = [];
+  var out = [];
   for (var i = 0; i < sheets.length; i++) {
-    names.push(sheets[i].getName());
+    out.push(sheets[i].getName() + " (#" + sheets[i].getSheetId() + ")");
   }
-  return names.join(" | ");
+  return out.join(" | ");
 }
 
-function resolveTabName(raw) {
-  var value = String(raw || "")
-    .toLowerCase()
-    .replace(/^\s+|\s+$/g, "");
-  if (value === "newsletter" || value.indexOf("newsletter") !== -1) {
-    return "newsletter";
-  }
-  if (
-    value === "inquiry" ||
-    value === "inquiries" ||
-    value === "contact" ||
-    value === "merch" ||
-    value.indexOf("inquir") !== -1
-  ) {
-    return "inquiry";
-  }
-  return "";
-}
-
-function getOrCreateTab(ss, tabName) {
+/** Case-insensitive find. */
+function findTab(ss, wanted) {
+  var target = String(wanted).toLowerCase();
   var sheets = ss.getSheets();
-  var i;
-
-  // 1) Exact case-insensitive match
-  for (i = 0; i < sheets.length; i++) {
-    if (String(sheets[i].getName()).toLowerCase() === tabName) {
+  for (var i = 0; i < sheets.length; i++) {
+    if (String(sheets[i].getName()).toLowerCase() === target) {
       return sheets[i];
     }
   }
-
-  // 2) Create exact lowercase tab name
-  try {
-    return ss.insertSheet(tabName);
-  } catch (err) {
-    sheets = ss.getSheets();
-    for (i = 0; i < sheets.length; i++) {
-      if (String(sheets[i].getName()).toLowerCase() === tabName) {
-        return sheets[i];
-      }
-    }
-    throw new Error(
-      "Could not open/create tab '" +
-        tabName +
-        "'. Existing: " +
-        listTabNames(ss) +
-        ". Details: " +
-        err,
-    );
-  }
+  return null;
 }
 
-function writeHeaders_(sheet) {
-  var firstCell = sheet.getRange(1, 1).getValue();
-  if (String(firstCell) !== "Timestamp") {
+/**
+ * Get the inquiry tab or newsletter tab as a DISTINCT Sheet object.
+ * Renames near-matches to the exact lowercase name so they stay separate.
+ */
+function getDistinctTab(ss, wanted) {
+  var wantedName = wanted === "newsletter" ? "newsletter" : "inquiry";
+  var sheet = findTab(ss, wantedName);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(wantedName);
+  }
+
+  // Force exact tab label so it is obvious in the UI.
+  if (sheet.getName() !== wantedName) {
+    sheet.setName(wantedName);
+  }
+
+  // Hard check: must be the correct physical tab.
+  if (String(sheet.getName()).toLowerCase() !== wantedName) {
+    throw new Error(
+      "Failed to select tab '" +
+        wantedName +
+        "'. Got '" +
+        sheet.getName() +
+        "'. Tabs: " +
+        listTabs(ss),
+    );
+  }
+
+  return sheet;
+}
+
+function ensureHeaders(sheet) {
+  var first = String(sheet.getRange(1, 1).getValue() || "");
+  if (first !== "Timestamp") {
+    sheet.clear();
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
   }
 }
 
-function parseRequestData(e) {
+function parseData(e) {
   var params = e && e.parameter ? e.parameter : {};
-  var data = {};
-
-  // Preferred: single JSON blob (avoids lost/partial query params)
   if (params.data) {
-    try {
-      data = JSON.parse(params.data);
-    } catch (err) {
-      throw new Error("Invalid data JSON: " + err);
-    }
-  } else {
-    data = params;
+    return JSON.parse(params.data);
   }
+  return params;
+}
 
-  return data;
+function decideTab(data) {
+  var blob = [
+    data.tab,
+    data.formType,
+    data.type,
+    data.request,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (blob.indexOf("newsletter") !== -1) return "newsletter";
+  return "inquiry";
 }
 
 function writeRow(data) {
-  var formType = String(data.formType || data.type || "");
-  var tabName =
-    resolveTabName(data.tab) ||
-    resolveTabName(formType) ||
-    resolveTabName(data.request);
+  var tab = decideTab(data || {});
+  var formType = String(data.formType || data.type || tab);
+  var ss = getSpreadsheet();
 
-  if (!tabName) {
+  // IMPORTANT: pick the sheet by intended tab, then verify identity.
+  var sheet = getDistinctTab(ss, tab);
+  var actualName = sheet.getName();
+  var actualId = sheet.getSheetId();
+
+  if (String(actualName).toLowerCase() !== tab) {
     throw new Error(
-      "Missing tab/formType. Refusing to write. Received keys: " +
-        Object.keys(data || {}).join(","),
+      "Refusing to write: wanted tab '" +
+        tab +
+        "' but sheet is '" +
+        actualName +
+        "'",
     );
   }
 
-  var ss = getSpreadsheet();
-  var sheet = getOrCreateTab(ss, tabName);
-  writeHeaders_(sheet);
+  ensureHeaders(sheet);
 
+  // Activate + append on that sheet object only.
+  ss.setActiveSheet(sheet);
   sheet.appendRow([
     new Date(),
-    tabName,
     formType,
     data.name || "",
     data.email || "",
     data.neighborhood || "",
     data.message || data.request || "",
   ]);
+  SpreadsheetApp.flush();
 
   return ContentService.createTextOutput(
     JSON.stringify({
       ok: true,
-      spreadsheet: ss.getName(),
-      sheet: sheet.getName(),
-      tab: tabName,
+      tab: tab,
+      sheet: actualName,
+      sheetId: actualId,
+      allTabs: listTabs(ss),
       formType: formType,
-      allTabs: listTabNames(ss),
     }),
   ).setMimeType(ContentService.MimeType.JSON);
 }
@@ -168,7 +164,7 @@ function errorResponse(err) {
 
 function doGet(e) {
   try {
-    return writeRow(parseRequestData(e));
+    return writeRow(parseData(e));
   } catch (err) {
     return errorResponse(err);
   }
@@ -180,7 +176,7 @@ function doPost(e) {
     if (e && e.postData && e.postData.contents) {
       data = JSON.parse(e.postData.contents);
     } else {
-      data = parseRequestData(e);
+      data = parseData(e);
     }
     return writeRow(data);
   } catch (err) {
@@ -188,18 +184,35 @@ function doPost(e) {
   }
 }
 
-/** Run THIS from the editor dropdown (not other functions). */
+/** Run from editor once: creates two real tabs. */
 function ensureTabsAndHeaders() {
   var ss = getSpreadsheet();
-  Logger.log("Spreadsheet: " + ss.getName());
-  Logger.log("Tabs before: " + listTabNames(ss));
+  Logger.log("Before: " + listTabs(ss));
 
-  var inquiry = getOrCreateTab(ss, "inquiry");
-  var newsletter = getOrCreateTab(ss, "newsletter");
-  writeHeaders_(inquiry);
-  writeHeaders_(newsletter);
+  var inquiry = getDistinctTab(ss, "inquiry");
+  var newsletter = getDistinctTab(ss, "newsletter");
+  ensureHeaders(inquiry);
+  ensureHeaders(newsletter);
 
-  Logger.log("inquiry -> " + inquiry.getName());
-  Logger.log("newsletter -> " + newsletter.getName());
-  Logger.log("Tabs after: " + listTabNames(ss));
+  // Prove they are different sheet IDs.
+  if (inquiry.getSheetId() === newsletter.getSheetId()) {
+    throw new Error(
+      "inquiry and newsletter resolved to the SAME sheet id. Tabs: " +
+        listTabs(ss),
+    );
+  }
+
+  Logger.log(
+    "inquiry id=" +
+      inquiry.getSheetId() +
+      " name=" +
+      inquiry.getName(),
+  );
+  Logger.log(
+    "newsletter id=" +
+      newsletter.getSheetId() +
+      " name=" +
+      newsletter.getName(),
+  );
+  Logger.log("After: " + listTabs(ss));
 }

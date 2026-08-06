@@ -20,16 +20,11 @@ function summarizeWebhookResponse(raw: string) {
 }
 
 /**
- * Appends a row via the Apps Script web app bound to:
+ * Appends a row via Apps Script web app:
  * https://docs.google.com/spreadsheets/d/10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ
  *
- * Sends one JSON `data` query param so tab routing cannot be lost:
- *   newsletter → "newsletter" tab
- *   contact / merch → "inquiry" tab
- *
- * Requires GOOGLE_SHEETS_WEBHOOK_URL.
- * After updating scripts/google-sheet-webhook.gs, redeploy Apps Script
- * (Manage deployments → New version).
+ * newsletter → physical tab "newsletter"
+ * contact/merch → physical tab "inquiry"
  */
 function tabForFormType(formType: string) {
   return formType.toLowerCase() === "newsletter" ? "newsletter" : "inquiry";
@@ -52,13 +47,8 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
 
   const params = new URLSearchParams({
     data: JSON.stringify(payload),
-    // Keep flat params too for older script versions during transition.
     tab,
     formType: entry.formType,
-    name: entry.name,
-    email: entry.email,
-    neighborhood: entry.neighborhood || "",
-    message: entry.message || entry.request || "",
   });
 
   const separator = webhookUrl.includes("?") ? "&" : "?";
@@ -80,6 +70,8 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
     error?: string;
     sheet?: string;
     tab?: string;
+    sheetId?: number;
+    allTabs?: string;
   } = {};
   try {
     parsed = JSON.parse(raw) as typeof parsed;
@@ -95,17 +87,24 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
     );
   }
 
-  const writtenTab = (parsed.tab || parsed.sheet || "").toLowerCase();
-  if (writtenTab && !writtenTab.includes(tab)) {
+  // Verify the PHYSICAL sheet name from Apps Script, not just our intended tab.
+  const actualSheet = String(parsed.sheet || "").toLowerCase();
+  if (!actualSheet) {
     throw new Error(
-      `Google Sheet wrote to '${parsed.sheet || parsed.tab}' but expected tab '${tab}'. Redeploy scripts/google-sheet-webhook.gs as a New version.`,
+      "Google Sheet webhook did not return the physical sheet name. Redeploy scripts/google-sheet-webhook.gs as a New version.",
+    );
+  }
+  if (actualSheet !== tab) {
+    throw new Error(
+      `Google Sheet wrote to physical tab '${parsed.sheet}' (id ${parsed.sheetId}) but expected '${tab}'. Tabs: ${parsed.allTabs || "unknown"}. Redeploy the Apps Script New version.`,
     );
   }
 
   return {
     ok: true as const,
     skipped: false as const,
-    tab: parsed.tab || tab,
+    tab,
     sheet: parsed.sheet || tab,
+    sheetId: parsed.sheetId,
   };
 }

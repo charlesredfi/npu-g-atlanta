@@ -178,7 +178,12 @@ export async function POST(request: Request) {
           type === "newsletter" ? "Subscribe to monthly newsletter" : undefined,
       });
       sheetLogged = sheetResult.ok;
-      sheetTab = "tab" in sheetResult ? sheetResult.tab : undefined;
+      sheetTab =
+        "sheet" in sheetResult
+          ? sheetResult.sheet
+          : "tab" in sheetResult
+            ? sheetResult.tab
+            : undefined;
       if (sheetResult.skipped) {
         console.warn(
           "GOOGLE_SHEETS_WEBHOOK_URL is not set; submission was not archived to the sheet.",
