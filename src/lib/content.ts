@@ -108,9 +108,9 @@ export const cityNpuResources = [
     id: "present",
     label: "Present at NPU",
     title: "Bring an item to the table",
-    text: "Applicants and neighbors can present rezoning, variance, and license matters at NPU meetings. Start with the City Planning NPU resources and your assigned planner.",
-    href: "https://www.npuatlanta.org/",
-    cta: "NPU resources",
+    text: "Applicants and neighbors can present rezoning, variance, and license matters at NPU meetings. Please note that NPUs require 30-day notice to process all presentation requests.",
+    href: "https://www.atlantaga.gov/government/departments/city-planning/neighborhood-planning-units/npu-presentation-request",
+    cta: "Request to present",
   },
   {
     id: "npu-university",
