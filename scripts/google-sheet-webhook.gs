@@ -1,16 +1,13 @@
 /**
  * NPU-G forms → Google Sheet webhook (two tabs in ONE spreadsheet)
  *
- * Tabs in spreadsheet 10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ:
+ * Tabs:
  *   - inquiry     ← Contact Us + merch
  *   - newsletter  ← Subscribe popup + News subscribe
  *
- * SETUP:
- * 1. Open that Google Sheet → Extensions → Apps Script
- * 2. Replace ALL code with this file → Save
- * 3. Run ensureTabsAndHeaders once (allow Sheets permission if asked)
- * 4. Deploy → Manage deployments → pencil → New version → Deploy
- *    (keep the same /exec URL in Vercel)
+ * IMPORTANT: In the Apps Script editor, run ONLY:
+ *   ensureTabsAndHeaders
+ * Do NOT run ensureHeaderRow / getOrCreateSheet / doGet from the dropdown.
  */
 
 var SPREADSHEET_ID = "10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ";
@@ -25,17 +22,25 @@ var HEADERS = [
 ];
 
 function getSpreadsheet() {
-  // Always open by ID so editor "Run" and the web app use the same file.
   try {
     return SpreadsheetApp.openById(SPREADSHEET_ID);
   } catch (err) {
     throw new Error(
       "Cannot open spreadsheet " +
         SPREADSHEET_ID +
-        ". Make sure this Apps Script project can access that Google Sheet. Details: " +
+        ". Open this script from that Sheet (Extensions → Apps Script) and allow Sheets permission. Details: " +
         err,
     );
   }
+}
+
+function listTabNames(ss) {
+  var sheets = ss.getSheets();
+  var names = [];
+  for (var i = 0; i < sheets.length; i++) {
+    names.push(sheets[i].getName());
+  }
+  return names.join(", ");
 }
 
 function findSheetByName_(ss, name) {
@@ -51,55 +56,30 @@ function findSheetByName_(ss, name) {
 
 function getOrCreateSheet(preferredName) {
   var ss = getSpreadsheet();
-  if (!ss) {
-    throw new Error("getSpreadsheet() returned empty");
-  }
-
   var existing = findSheetByName_(ss, preferredName);
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
 
   try {
     var created = ss.insertSheet(String(preferredName));
-    if (created) {
-      return created;
-    }
+    if (created) return created;
   } catch (err) {
-    // Race / duplicate name: try find again.
     existing = findSheetByName_(ss, preferredName);
-    if (existing) {
-      return existing;
-    }
-    throw new Error(
-      "Could not create tab '" + preferredName + "': " + err,
-    );
+    if (existing) return existing;
+    throw new Error("Could not create tab '" + preferredName + "': " + err);
   }
 
   existing = findSheetByName_(ss, preferredName);
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
 
   throw new Error(
     "Tab '" +
       preferredName +
       "' could not be found or created. Existing tabs: " +
-      ss
-        .getSheets()
-        .map(function (s) {
-          return s.getName();
-        })
-        .join(", "),
+      listTabNames(ss),
   );
 }
 
-function ensureHeaderRow(sheet) {
-  if (!sheet || typeof sheet.getRange !== "function") {
-    throw new Error(
-      "ensureHeaderRow called without a valid sheet object",
-    );
-  }
+function writeHeaders_(sheet) {
   var firstCell = sheet.getRange(1, 1).getValue();
   if (!firstCell) {
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
@@ -135,7 +115,7 @@ function writeRow(data) {
   var formType = data.formType || data.type || "";
   var tabName = tabForSubmission(data);
   var sheet = getOrCreateSheet(tabName);
-  ensureHeaderRow(sheet);
+  writeHeaders_(sheet);
 
   sheet.appendRow([
     new Date(),
@@ -184,31 +164,32 @@ function doPost(e) {
 }
 
 /**
- * Run once from the Apps Script editor:
- * function dropdown → ensureTabsAndHeaders → Run
+ * THIS is the function to run from the editor dropdown.
  * Approve Google Sheets access if prompted.
  */
 function ensureTabsAndHeaders() {
   var ss = getSpreadsheet();
-  Logger.log("Opened spreadsheet: " + ss.getName() + " (" + ss.getId() + ")");
-  Logger.log(
-    "Existing tabs: " +
-      ss
-        .getSheets()
-        .map(function (s) {
-          return s.getName();
-        })
-        .join(", "),
-  );
+  Logger.log("Opened: " + ss.getName() + " (" + ss.getId() + ")");
+  Logger.log("Existing tabs: " + listTabNames(ss));
 
-  var inquiry = getOrCreateSheet("inquiry");
-  Logger.log("inquiry sheet ok: " + (inquiry && inquiry.getName()));
+  var tabNames = ["inquiry", "newsletter"];
+  for (var i = 0; i < tabNames.length; i++) {
+    var name = tabNames[i];
+    var sheet = findSheetByName_(ss, name);
+    if (!sheet) {
+      sheet = ss.insertSheet(name);
+    }
+    if (!sheet) {
+      throw new Error(
+        "Failed to get/create tab '" +
+          name +
+          "'. Tabs now: " +
+          listTabNames(ss),
+      );
+    }
+    writeHeaders_(sheet);
+    Logger.log("Ready: " + sheet.getName());
+  }
 
-  var newsletter = getOrCreateSheet("newsletter");
-  Logger.log("newsletter sheet ok: " + (newsletter && newsletter.getName()));
-
-  ensureHeaderRow(inquiry);
-  ensureHeaderRow(newsletter);
-
-  Logger.log("Headers ready on inquiry + newsletter");
+  Logger.log("Done. Both inquiry and newsletter tabs are ready.");
 }
