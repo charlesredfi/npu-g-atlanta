@@ -112,6 +112,22 @@ export function Contact() {
             </li>
             <li>
               <p className="display text-xs tracking-[0.18em] text-accent">
+                Zoning Representative
+              </p>
+              <p className="display mt-2 text-lg tracking-[0.04em] text-white">
+                LA Williams &amp; Ola Reynolds
+              </p>
+              <p className="serif text-base text-white/80">
+                <a
+                  href="mailto:secretary@npugatlanta.org"
+                  className="underline decoration-accent/60 underline-offset-4 hover:text-accent"
+                >
+                  secretary@npugatlanta.org
+                </a>
+              </p>
+            </li>
+            <li>
+              <p className="display text-xs tracking-[0.18em] text-accent">
                 DCP Director
               </p>
               <p className="display mt-2 text-lg tracking-[0.04em] text-white">
