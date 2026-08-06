@@ -3,6 +3,7 @@ import { Hero } from "@/components/Hero";
 import { Priorities } from "@/components/Priorities";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { SubscribeModal } from "@/components/SubscribeModal";
 
 // Below-the-fold sections load after the first paint to cut initial JS/parse work.
 const Leadership = dynamic(() =>
@@ -43,6 +44,7 @@ export default function Home() {
         <Contact />
       </main>
       <SiteFooter />
+      <SubscribeModal />
     </>
   );
 }
