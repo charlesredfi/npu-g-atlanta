@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { newsletterNeighborhoods } from "@/lib/content";
@@ -103,10 +104,18 @@ export function SubscribeModal() {
         aria-labelledby={titleId}
         className="relative z-10 flex w-full max-w-md flex-col overflow-hidden border border-white/15 bg-white shadow-[0_24px_80px_rgba(11,31,58,0.35)] max-h-[min(100dvh-1.5rem,560px)]"
       >
-        <div className="relative shrink-0 bg-accent px-4 py-3.5 pr-12 sm:px-5 sm:py-4">
+        <div className="relative shrink-0 bg-accent px-4 py-3 pr-12 sm:px-5 sm:py-3.5">
+          <Image
+            src="/media/npu-g-logo-white.png"
+            alt="NPU-G"
+            width={220}
+            height={72}
+            className="h-9 w-auto sm:h-10"
+            priority
+          />
           <p
             id={titleId}
-            className="display text-2xl leading-none tracking-[0.04em] text-white sm:text-3xl"
+            className="display mt-2.5 text-2xl leading-none tracking-[0.04em] text-white sm:text-3xl"
           >
             Subscribe to NPU-G
           </p>
