@@ -16,6 +16,8 @@
  * Optional: select ensureTabsAndHeaders → Run (once) to create both tabs.
  */
 
+var SPREADSHEET_ID = "10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ";
+
 var HEADERS = [
   "Timestamp",
   "Type",
@@ -24,6 +26,19 @@ var HEADERS = [
   "Neighborhood",
   "Message",
 ];
+
+function getSpreadsheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (ss) return ss;
+
+  // Standalone / editor runs sometimes have no "active" spreadsheet.
+  ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  if (ss) return ss;
+
+  throw new Error(
+    "Could not open the NPU-G spreadsheet. Open Apps Script from the Sheet via Extensions → Apps Script, or check SPREADSHEET_ID.",
+  );
+}
 
 function normalizeTabName(value) {
   var raw = String(value || "")
@@ -42,7 +57,6 @@ function normalizeTabName(value) {
 }
 
 function tabForSubmission(data) {
-  // Prefer explicit tab from the website, then formType.
   var fromTab = normalizeTabName(data.tab);
   if (fromTab) return fromTab;
 
@@ -54,7 +68,7 @@ function tabForSubmission(data) {
 
 /** Find a sheet by name, case-insensitive. Create it if missing. */
 function getOrCreateSheet(preferredName) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = getSpreadsheet();
   var sheets = ss.getSheets();
   var target = String(preferredName).toLowerCase();
 
@@ -64,10 +78,17 @@ function getOrCreateSheet(preferredName) {
     }
   }
 
-  return ss.insertSheet(preferredName);
+  var created = ss.insertSheet(preferredName);
+  if (!created) {
+    throw new Error("Failed to create sheet tab: " + preferredName);
+  }
+  return created;
 }
 
 function ensureHeaderRow(sheet) {
+  if (!sheet) {
+    throw new Error("ensureHeaderRow called without a sheet");
+  }
   var firstCell = sheet.getRange(1, 1).getValue();
   if (!firstCell) {
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
@@ -129,6 +150,15 @@ function doPost(e) {
 
 /** Run once from the Apps Script editor to create inquiry + newsletter tabs. */
 function ensureTabsAndHeaders() {
-  ensureHeaderRow(getOrCreateSheet("inquiry"));
-  ensureHeaderRow(getOrCreateSheet("newsletter"));
+  var inquiry = getOrCreateSheet("inquiry");
+  var newsletter = getOrCreateSheet("newsletter");
+  ensureHeaderRow(inquiry);
+  ensureHeaderRow(newsletter);
+  Logger.log(
+    "Ready: inquiry='" +
+      inquiry.getName() +
+      "', newsletter='" +
+      newsletter.getName() +
+      "'",
+  );
 }
