@@ -159,7 +159,11 @@ export function Priorities() {
                           {item.summary}
                         </p>
                         <a
-                          href="#about"
+                          href={
+                            "learnMoreHref" in item
+                              ? item.learnMoreHref
+                              : "#about"
+                          }
                           className="btn-outline mt-6 inline-flex text-navy hover:bg-navy hover:text-white"
                         >
                           Learn more

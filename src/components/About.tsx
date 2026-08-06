@@ -49,7 +49,7 @@ export function About() {
         </div>
       </div>
 
-      <div className="border-y border-line bg-soft">
+      <div id="npu-at-a-glance" className="section-anchor border-y border-line bg-soft">
         <div className="mx-auto max-w-7xl px-5 py-10 md:px-8 lg:py-12">
           <div>
             <p className="display text-sm tracking-[0.22em] text-accent">

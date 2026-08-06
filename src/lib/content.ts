@@ -65,6 +65,7 @@ export const priorities = [
     highlightTitle:
       "Thirteen neighborhoods speaking with one coordinated voice",
     highlightHref: "#contact",
+    learnMoreHref: "#npu-at-a-glance",
   },
 ] as const;
 
