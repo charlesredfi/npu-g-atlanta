@@ -11,12 +11,11 @@ const landUseContacts = [
   {
     title: "Zoning Representative",
     name: "LA Williams & Ola Reynolds",
-    email: "secretary@npugatlanta.org",
+    email: "info@npugatlanta.org",
   },
   {
     title: "City Planner",
     name: "Nathan Carson",
-    phone: "678-381-9481",
     email: "NATCarson@atlantaga.gov",
   },
   {
@@ -178,16 +177,6 @@ export function Priorities() {
                                 <p className="display mt-1.5 text-sm tracking-[0.04em] text-white md:text-base">
                                   {contact.name}
                                 </p>
-                                {"phone" in contact && contact.phone ? (
-                                  <p className="serif mt-1 text-sm text-white/80">
-                                    <a
-                                      href={`tel:${contact.phone.replace(/-/g, "")}`}
-                                      className="underline decoration-white/35 underline-offset-4 transition hover:text-accent hover:decoration-accent"
-                                    >
-                                      {contact.phone}
-                                    </a>
-                                  </p>
-                                ) : null}
                                 <p className="serif mt-1 text-sm text-white/80">
                                   <a
                                     href={`mailto:${contact.email}`}
