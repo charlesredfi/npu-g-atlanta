@@ -20,13 +20,19 @@ function summarizeWebhookResponse(raw: string) {
 }
 
 /**
- * Appends a contact/newsletter row via the Apps Script web app bound to:
+ * Appends a row via the Apps Script web app bound to:
  * https://docs.google.com/spreadsheets/d/10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ
+ *
+ * The Apps Script routes by formType:
+ *   newsletter → "newsletter" tab
+ *   contact / merch → "inquiry" tab
  *
  * Apps Script /exec endpoints redirect POST→GET and break doPost from Vercel.
  * We send fields as query params to doGet, which Apps Script handles correctly.
  *
  * Requires GOOGLE_SHEETS_WEBHOOK_URL in the environment.
+ * After updating scripts/google-sheet-webhook.gs, redeploy that Apps Script
+ * (Manage deployments → New version) so tab routing takes effect.
  */
 export async function appendToGoogleSheet(entry: SheetSubmission) {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL?.trim();
