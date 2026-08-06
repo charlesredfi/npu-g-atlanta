@@ -7,8 +7,27 @@ type PriorityId = (typeof priorities)[number]["id"];
 
 const CITY_VIDEO = "/media/atlanta-skyline.mp4";
 
+const landUseContacts = [
+  {
+    title: "Zoning Representative",
+    name: "LA Williams & Ola Reynolds",
+    email: "secretary@npugatlanta.org",
+  },
+  {
+    title: "City Planner",
+    name: "Nathan Carson",
+    phone: "678-381-9481",
+    email: "NATCarson@atlantaga.gov",
+  },
+  {
+    title: "DCP Director",
+    name: "Leah LaRue",
+    email: "llarue@atlantaga.gov",
+  },
+] as const;
+
 export function Priorities() {
-  const [activeId, setActiveId] = useState<PriorityId>("cleanup");
+  const [activeId, setActiveId] = useState<PriorityId>("land-use");
   const [playing, setPlaying] = useState(true);
   const [loadVideo, setLoadVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -149,20 +168,60 @@ export function Priorities() {
                       </div>
 
                       <div className="flex w-full flex-col justify-center bg-navy px-6 py-7 md:px-8 md:py-8 lg:w-[54%]">
-                        <p className="display text-xs tracking-[0.18em] text-accent">
-                          {item.highlightLabel}
-                        </p>
-                        <a
-                          href={item.highlightHref}
-                          className="serif mt-3 text-lg leading-snug text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-accent md:text-xl"
-                        >
-                          {item.highlightTitle}
-                        </a>
+                        {item.id === "land-use" ? (
+                          <ul className="space-y-5">
+                            {landUseContacts.map((contact) => (
+                              <li key={contact.title}>
+                                <p className="display text-[11px] tracking-[0.18em] text-accent">
+                                  {contact.title}
+                                </p>
+                                <p className="display mt-1.5 text-sm tracking-[0.04em] text-white md:text-base">
+                                  {contact.name}
+                                </p>
+                                {"phone" in contact && contact.phone ? (
+                                  <p className="serif mt-1 text-sm text-white/80">
+                                    <a
+                                      href={`tel:${contact.phone.replace(/-/g, "")}`}
+                                      className="underline decoration-white/35 underline-offset-4 transition hover:text-accent hover:decoration-accent"
+                                    >
+                                      {contact.phone}
+                                    </a>
+                                  </p>
+                                ) : null}
+                                <p className="serif mt-1 text-sm text-white/80">
+                                  <a
+                                    href={`mailto:${contact.email}`}
+                                    className="underline decoration-white/35 underline-offset-4 transition hover:text-accent hover:decoration-accent"
+                                  >
+                                    {contact.email}
+                                  </a>
+                                </p>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <>
+                            <p className="display text-xs tracking-[0.18em] text-accent">
+                              {item.highlightLabel}
+                            </p>
+                            <a
+                              href={item.highlightHref}
+                              className="serif mt-3 text-lg leading-snug text-white underline decoration-white/40 underline-offset-4 transition hover:decoration-accent md:text-xl"
+                            >
+                              {item.highlightTitle}
+                            </a>
+                          </>
+                        )}
                       </div>
                     </div>
 
                     {/* Holds list height while the card is absolutely positioned on desktop */}
-                    <div className="hidden lg:block lg:h-[210px]" aria-hidden />
+                    <div
+                      className={`hidden lg:block ${
+                        item.id === "land-use" ? "lg:h-[420px]" : "lg:h-[210px]"
+                      }`}
+                      aria-hidden
+                    />
                   </li>
                 );
               }
