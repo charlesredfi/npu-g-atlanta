@@ -6,9 +6,7 @@ import { deliverSiteForm } from "@/lib/deliverSiteForm";
 const committees = [
   {
     title: "Land Use and Zoning Committee",
-    note: "Co-Chairs",
     members: ["LA Williams", "Ola Reynolds"],
-    email: "info@npugatlanta.org",
   },
   {
     title: "Public Safety and Code Enforcement Committee",
@@ -97,20 +95,23 @@ export function Contact() {
           </ul>
 
           <div className="mt-10 border-t border-white/15 pt-8">
-            <p className="display text-sm tracking-[0.22em] text-accent">
-              Committees
-            </p>
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+              <p className="display text-sm tracking-[0.22em] text-accent">
+                Committees
+              </p>
+              <a
+                href="mailto:info@npugatlanta.org"
+                className="serif text-base text-white/80 underline decoration-accent/60 underline-offset-4 hover:text-accent"
+              >
+                info@npugatlanta.org
+              </a>
+            </div>
             <ul className="mt-6 space-y-6">
               {committees.map((committee) => (
                 <li key={committee.title}>
                   <p className="display text-xs tracking-[0.18em] text-accent">
                     {committee.title}
                   </p>
-                  {"note" in committee && committee.note ? (
-                    <p className="display mt-2 text-sm tracking-[0.08em] text-white/60">
-                      {committee.note}
-                    </p>
-                  ) : null}
                   <ul className="mt-2 space-y-1">
                     {committee.members.map((member) => (
                       <li
@@ -121,16 +122,6 @@ export function Contact() {
                       </li>
                     ))}
                   </ul>
-                  {"email" in committee && committee.email ? (
-                    <p className="serif mt-2 text-base text-white/80">
-                      <a
-                        href={`mailto:${committee.email}`}
-                        className="underline decoration-accent/60 underline-offset-4 hover:text-accent"
-                      >
-                        {committee.email}
-                      </a>
-                    </p>
-                  ) : null}
                 </li>
               ))}
             </ul>
