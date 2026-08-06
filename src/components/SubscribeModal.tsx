@@ -6,8 +6,6 @@ import { createPortal } from "react-dom";
 import { newsletterNeighborhoods } from "@/lib/content";
 import { deliverSiteForm } from "@/lib/deliverSiteForm";
 
-const STORAGE_KEY = "npug-subscribe-dismissed";
-
 export function SubscribeModal() {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -20,11 +18,7 @@ export function SubscribeModal() {
 
   useEffect(() => {
     setMounted(true);
-    try {
-      if (window.sessionStorage.getItem(STORAGE_KEY)) return;
-    } catch {
-      // Private mode / blocked storage: still show once this load.
-    }
+    // Always open on each page load (no session/local storage remember).
     const frame = window.requestAnimationFrame(() => setOpen(true));
     return () => window.cancelAnimationFrame(frame);
   }, []);
@@ -37,7 +31,7 @@ export function SubscribeModal() {
     closeRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") dismiss();
+      if (event.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKeyDown);
 
@@ -49,11 +43,6 @@ export function SubscribeModal() {
 
   function dismiss() {
     setOpen(false);
-    try {
-      window.sessionStorage.setItem(STORAGE_KEY, "1");
-    } catch {
-      // Ignore storage failures; modal is already closed for this visit.
-    }
   }
 
   async function onSubscribe(event: FormEvent<HTMLFormElement>) {
