@@ -154,7 +154,7 @@ export const leadershipBoard = [
     name: "LA Williams",
     role: "Secretary",
     email: "Secretary@npugatlanta.org",
-    image: null,
+    image: "/media/leader-la.png",
   },
   {
     name: "Nio Olutosin",
