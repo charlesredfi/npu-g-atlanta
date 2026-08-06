@@ -97,9 +97,9 @@ export function SubscribeModal() {
           <Image
             src="/media/npu-g-logo-white.png"
             alt="NPU-G"
-            width={220}
-            height={72}
-            className="h-9 w-auto sm:h-10"
+            width={320}
+            height={104}
+            className="h-14 w-auto sm:h-16"
             priority
           />
           <p
