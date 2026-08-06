@@ -34,11 +34,17 @@ function summarizeWebhookResponse(raw: string) {
  * After updating scripts/google-sheet-webhook.gs, redeploy that Apps Script
  * (Manage deployments → New version) so tab routing takes effect.
  */
+function tabForFormType(formType: string) {
+  return formType.toLowerCase() === "newsletter" ? "newsletter" : "inquiry";
+}
+
 export async function appendToGoogleSheet(entry: SheetSubmission) {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL?.trim();
   if (!webhookUrl) return { ok: false as const, skipped: true as const };
 
+  const tab = tabForFormType(entry.formType);
   const params = new URLSearchParams({
+    tab,
     formType: entry.formType,
     name: entry.name,
     email: entry.email,

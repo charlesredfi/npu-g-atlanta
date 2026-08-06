@@ -1,13 +1,19 @@
 /**
- * NPU-G Contact Form → Google Sheet webhook
+ * NPU-G forms → Google Sheet webhook (two tabs in ONE spreadsheet)
  *
- * Tabs:
- *   - "inquiry"    ← contact + merch submissions
- *   - "newsletter" ← newsletter signups (popup + News section)
+ * Expected tab names (same document):
+ *   - inquiry     ← Contact Us + merch
+ *   - newsletter  ← Subscribe popup + News subscribe
  *
- * IMPORTANT after pasting updates:
- * Deploy → Manage deployments → pencil icon → Version: New version → Deploy
- * Keep the same Web app URL in Vercel (GOOGLE_SHEETS_WEBHOOK_URL).
+ * The website sends ?tab=inquiry|newsletter&formType=...
+ *
+ * AFTER PASTING THIS FILE:
+ * 1. Extensions → Apps Script → replace all code with this file
+ * 2. Deploy → Manage deployments → pencil → Version: New version → Deploy
+ * 3. Do NOT create a brand-new deployment (that changes the URL)
+ * 4. Keep the same /exec URL in Vercel as GOOGLE_SHEETS_WEBHOOK_URL
+ *
+ * Optional: select ensureTabsAndHeaders → Run (once) to create both tabs.
  */
 
 var HEADERS = [
@@ -19,21 +25,46 @@ var HEADERS = [
   "Message",
 ];
 
-function sheetNameForType(formType) {
-  var type = String(formType || "").toLowerCase();
-  if (type === "newsletter") return "newsletter";
-  // contact, merch, and anything else land on inquiries
+function normalizeTabName(value) {
+  var raw = String(value || "")
+    .toLowerCase()
+    .replace(/^\s+|\s+$/g, "");
+  if (raw === "newsletter" || raw === "newsletters") return "newsletter";
+  if (
+    raw === "inquiry" ||
+    raw === "inquiries" ||
+    raw === "contact" ||
+    raw === "merch"
+  ) {
+    return "inquiry";
+  }
+  return "";
+}
+
+function tabForSubmission(data) {
+  // Prefer explicit tab from the website, then formType.
+  var fromTab = normalizeTabName(data.tab);
+  if (fromTab) return fromTab;
+
+  var fromType = normalizeTabName(data.formType || data.type);
+  if (fromType) return fromType;
+
   return "inquiry";
 }
 
-function getTargetSheet(formType) {
+/** Find a sheet by name, case-insensitive. Create it if missing. */
+function getOrCreateSheet(preferredName) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var name = sheetNameForType(formType);
-  var sheet = ss.getSheetByName(name);
-  if (!sheet) {
-    sheet = ss.insertSheet(name);
+  var sheets = ss.getSheets();
+  var target = String(preferredName).toLowerCase();
+
+  for (var i = 0; i < sheets.length; i++) {
+    if (String(sheets[i].getName()).toLowerCase() === target) {
+      return sheets[i];
+    }
   }
-  return sheet;
+
+  return ss.insertSheet(preferredName);
 }
 
 function ensureHeaderRow(sheet) {
@@ -46,8 +77,10 @@ function ensureHeaderRow(sheet) {
 
 function writeRow(data) {
   var formType = data.formType || data.type || "";
-  var sheet = getTargetSheet(formType);
+  var tabName = tabForSubmission(data);
+  var sheet = getOrCreateSheet(tabName);
   ensureHeaderRow(sheet);
+
   sheet.appendRow([
     new Date(),
     formType,
@@ -56,8 +89,14 @@ function writeRow(data) {
     data.neighborhood || "",
     data.message || data.request || "",
   ]);
+
   return ContentService.createTextOutput(
-    JSON.stringify({ ok: true, sheet: sheet.getName() }),
+    JSON.stringify({
+      ok: true,
+      sheet: sheet.getName(),
+      tab: tabName,
+      formType: formType,
+    }),
   ).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -67,7 +106,6 @@ function errorResponse(err) {
   ).setMimeType(ContentService.MimeType.JSON);
 }
 
-/** Used by the website (Vercel cannot reliably POST through Apps Script redirects). */
 function doGet(e) {
   try {
     var data = e && e.parameter ? e.parameter : {};
@@ -77,7 +115,6 @@ function doGet(e) {
   }
 }
 
-/** Kept for manual/browser tests that POST JSON. */
 function doPost(e) {
   try {
     var data = {};
@@ -90,8 +127,8 @@ function doPost(e) {
   }
 }
 
-/** Optional: Run once from the Apps Script editor to create both tabs + headers. */
+/** Run once from the Apps Script editor to create inquiry + newsletter tabs. */
 function ensureTabsAndHeaders() {
-  ensureHeaderRow(getTargetSheet("contact"));
-  ensureHeaderRow(getTargetSheet("newsletter"));
+  ensureHeaderRow(getOrCreateSheet("inquiry"));
+  ensureHeaderRow(getOrCreateSheet("newsletter"));
 }
