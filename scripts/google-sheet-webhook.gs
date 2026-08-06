@@ -1,19 +1,16 @@
 /**
  * NPU-G forms → Google Sheet webhook (two tabs in ONE spreadsheet)
  *
- * Expected tab names (same document):
+ * Tabs in spreadsheet 10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ:
  *   - inquiry     ← Contact Us + merch
  *   - newsletter  ← Subscribe popup + News subscribe
  *
- * The website sends ?tab=inquiry|newsletter&formType=...
- *
- * AFTER PASTING THIS FILE:
- * 1. Extensions → Apps Script → replace all code with this file
- * 2. Deploy → Manage deployments → pencil → Version: New version → Deploy
- * 3. Do NOT create a brand-new deployment (that changes the URL)
- * 4. Keep the same /exec URL in Vercel as GOOGLE_SHEETS_WEBHOOK_URL
- *
- * Optional: select ensureTabsAndHeaders → Run (once) to create both tabs.
+ * SETUP:
+ * 1. Open that Google Sheet → Extensions → Apps Script
+ * 2. Replace ALL code with this file → Save
+ * 3. Run ensureTabsAndHeaders once (allow Sheets permission if asked)
+ * 4. Deploy → Manage deployments → pencil → New version → Deploy
+ *    (keep the same /exec URL in Vercel)
  */
 
 var SPREADSHEET_ID = "10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ";
@@ -28,16 +25,86 @@ var HEADERS = [
 ];
 
 function getSpreadsheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (ss) return ss;
+  // Always open by ID so editor "Run" and the web app use the same file.
+  try {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  } catch (err) {
+    throw new Error(
+      "Cannot open spreadsheet " +
+        SPREADSHEET_ID +
+        ". Make sure this Apps Script project can access that Google Sheet. Details: " +
+        err,
+    );
+  }
+}
 
-  // Standalone / editor runs sometimes have no "active" spreadsheet.
-  ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  if (ss) return ss;
+function findSheetByName_(ss, name) {
+  var target = String(name).toLowerCase();
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (String(sheets[i].getName()).toLowerCase() === target) {
+      return sheets[i];
+    }
+  }
+  return null;
+}
+
+function getOrCreateSheet(preferredName) {
+  var ss = getSpreadsheet();
+  if (!ss) {
+    throw new Error("getSpreadsheet() returned empty");
+  }
+
+  var existing = findSheetByName_(ss, preferredName);
+  if (existing) {
+    return existing;
+  }
+
+  try {
+    var created = ss.insertSheet(String(preferredName));
+    if (created) {
+      return created;
+    }
+  } catch (err) {
+    // Race / duplicate name: try find again.
+    existing = findSheetByName_(ss, preferredName);
+    if (existing) {
+      return existing;
+    }
+    throw new Error(
+      "Could not create tab '" + preferredName + "': " + err,
+    );
+  }
+
+  existing = findSheetByName_(ss, preferredName);
+  if (existing) {
+    return existing;
+  }
 
   throw new Error(
-    "Could not open the NPU-G spreadsheet. Open Apps Script from the Sheet via Extensions → Apps Script, or check SPREADSHEET_ID.",
+    "Tab '" +
+      preferredName +
+      "' could not be found or created. Existing tabs: " +
+      ss
+        .getSheets()
+        .map(function (s) {
+          return s.getName();
+        })
+        .join(", "),
   );
+}
+
+function ensureHeaderRow(sheet) {
+  if (!sheet || typeof sheet.getRange !== "function") {
+    throw new Error(
+      "ensureHeaderRow called without a valid sheet object",
+    );
+  }
+  var firstCell = sheet.getRange(1, 1).getValue();
+  if (!firstCell) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
+  }
 }
 
 function normalizeTabName(value) {
@@ -59,41 +126,9 @@ function normalizeTabName(value) {
 function tabForSubmission(data) {
   var fromTab = normalizeTabName(data.tab);
   if (fromTab) return fromTab;
-
   var fromType = normalizeTabName(data.formType || data.type);
   if (fromType) return fromType;
-
   return "inquiry";
-}
-
-/** Find a sheet by name, case-insensitive. Create it if missing. */
-function getOrCreateSheet(preferredName) {
-  var ss = getSpreadsheet();
-  var sheets = ss.getSheets();
-  var target = String(preferredName).toLowerCase();
-
-  for (var i = 0; i < sheets.length; i++) {
-    if (String(sheets[i].getName()).toLowerCase() === target) {
-      return sheets[i];
-    }
-  }
-
-  var created = ss.insertSheet(preferredName);
-  if (!created) {
-    throw new Error("Failed to create sheet tab: " + preferredName);
-  }
-  return created;
-}
-
-function ensureHeaderRow(sheet) {
-  if (!sheet) {
-    throw new Error("ensureHeaderRow called without a sheet");
-  }
-  var firstCell = sheet.getRange(1, 1).getValue();
-  if (!firstCell) {
-    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
-  }
 }
 
 function writeRow(data) {
@@ -148,17 +183,32 @@ function doPost(e) {
   }
 }
 
-/** Run once from the Apps Script editor to create inquiry + newsletter tabs. */
+/**
+ * Run once from the Apps Script editor:
+ * function dropdown → ensureTabsAndHeaders → Run
+ * Approve Google Sheets access if prompted.
+ */
 function ensureTabsAndHeaders() {
+  var ss = getSpreadsheet();
+  Logger.log("Opened spreadsheet: " + ss.getName() + " (" + ss.getId() + ")");
+  Logger.log(
+    "Existing tabs: " +
+      ss
+        .getSheets()
+        .map(function (s) {
+          return s.getName();
+        })
+        .join(", "),
+  );
+
   var inquiry = getOrCreateSheet("inquiry");
+  Logger.log("inquiry sheet ok: " + (inquiry && inquiry.getName()));
+
   var newsletter = getOrCreateSheet("newsletter");
+  Logger.log("newsletter sheet ok: " + (newsletter && newsletter.getName()));
+
   ensureHeaderRow(inquiry);
   ensureHeaderRow(newsletter);
-  Logger.log(
-    "Ready: inquiry='" +
-      inquiry.getName() +
-      "', newsletter='" +
-      newsletter.getName() +
-      "'",
-  );
+
+  Logger.log("Headers ready on inquiry + newsletter");
 }
