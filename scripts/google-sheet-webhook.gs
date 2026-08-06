@@ -1,17 +1,20 @@
 /**
- * NPU-G forms → ONE spreadsheet, TWO separate tabs (not one tab with labels)
+ * NPU-G forms -> ONE spreadsheet, TWO separate tabs
  *
- * Creates/uses exact tab names:
+ * Exact tab names:
  *   inquiry
  *   newsletter
  *
  * SETUP after paste:
- * 1. Extensions → Apps Script → replace all → Save
+ * 1. Extensions -> Apps Script -> replace all -> Save
  * 2. Run ensureTabsAndHeaders
- * 3. Deploy → Manage deployments → New version → Deploy
+ * 3. Deploy -> Manage deployments -> pencil -> New version -> Deploy
+ *
+ * Correct deploy response must include: "version":"physical-tabs-v3"
  */
 
 var SPREADSHEET_ID = "10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ";
+var SCRIPT_VERSION = "physical-tabs-v3";
 
 var HEADERS = [
   "Timestamp",
@@ -35,7 +38,6 @@ function listTabs(ss) {
   return out.join(" | ");
 }
 
-/** Case-insensitive find. */
 function findTab(ss, wanted) {
   var target = String(wanted).toLowerCase();
   var sheets = ss.getSheets();
@@ -47,10 +49,6 @@ function findTab(ss, wanted) {
   return null;
 }
 
-/**
- * Get the inquiry tab or newsletter tab as a DISTINCT Sheet object.
- * Renames near-matches to the exact lowercase name so they stay separate.
- */
 function getDistinctTab(ss, wanted) {
   var wantedName = wanted === "newsletter" ? "newsletter" : "inquiry";
   var sheet = findTab(ss, wantedName);
@@ -59,12 +57,10 @@ function getDistinctTab(ss, wanted) {
     sheet = ss.insertSheet(wantedName);
   }
 
-  // Force exact tab label so it is obvious in the UI.
   if (sheet.getName() !== wantedName) {
     sheet.setName(wantedName);
   }
 
-  // Hard check: must be the correct physical tab.
   if (String(sheet.getName()).toLowerCase() !== wantedName) {
     throw new Error(
       "Failed to select tab '" +
@@ -82,7 +78,6 @@ function getDistinctTab(ss, wanted) {
 function ensureHeaders(sheet) {
   var first = String(sheet.getRange(1, 1).getValue() || "");
   if (first !== "Timestamp") {
-    sheet.clear();
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
   }
@@ -97,15 +92,9 @@ function parseData(e) {
 }
 
 function decideTab(data) {
-  var blob = [
-    data.tab,
-    data.formType,
-    data.type,
-    data.request,
-  ]
+  var blob = [data.tab, data.formType, data.type, data.request]
     .join(" ")
     .toLowerCase();
-
   if (blob.indexOf("newsletter") !== -1) return "newsletter";
   return "inquiry";
 }
@@ -114,8 +103,6 @@ function writeRow(data) {
   var tab = decideTab(data || {});
   var formType = String(data.formType || data.type || tab);
   var ss = getSpreadsheet();
-
-  // IMPORTANT: pick the sheet by intended tab, then verify identity.
   var sheet = getDistinctTab(ss, tab);
   var actualName = sheet.getName();
   var actualId = sheet.getSheetId();
@@ -131,8 +118,6 @@ function writeRow(data) {
   }
 
   ensureHeaders(sheet);
-
-  // Activate + append on that sheet object only.
   ss.setActiveSheet(sheet);
   sheet.appendRow([
     new Date(),
@@ -147,6 +132,7 @@ function writeRow(data) {
   return ContentService.createTextOutput(
     JSON.stringify({
       ok: true,
+      version: SCRIPT_VERSION,
       tab: tab,
       sheet: actualName,
       sheetId: actualId,
@@ -158,7 +144,7 @@ function writeRow(data) {
 
 function errorResponse(err) {
   return ContentService.createTextOutput(
-    JSON.stringify({ ok: false, error: String(err) }),
+    JSON.stringify({ ok: false, error: String(err), version: SCRIPT_VERSION }),
   ).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -184,9 +170,9 @@ function doPost(e) {
   }
 }
 
-/** Run from editor once: creates two real tabs. */
 function ensureTabsAndHeaders() {
   var ss = getSpreadsheet();
+  Logger.log("VERSION " + SCRIPT_VERSION);
   Logger.log("Before: " + listTabs(ss));
 
   var inquiry = getDistinctTab(ss, "inquiry");
@@ -194,7 +180,6 @@ function ensureTabsAndHeaders() {
   ensureHeaders(inquiry);
   ensureHeaders(newsletter);
 
-  // Prove they are different sheet IDs.
   if (inquiry.getSheetId() === newsletter.getSheetId()) {
     throw new Error(
       "inquiry and newsletter resolved to the SAME sheet id. Tabs: " +
@@ -202,17 +187,9 @@ function ensureTabsAndHeaders() {
     );
   }
 
+  Logger.log("inquiry id=" + inquiry.getSheetId() + " name=" + inquiry.getName());
   Logger.log(
-    "inquiry id=" +
-      inquiry.getSheetId() +
-      " name=" +
-      inquiry.getName(),
-  );
-  Logger.log(
-    "newsletter id=" +
-      newsletter.getSheetId() +
-      " name=" +
-      newsletter.getName(),
+    "newsletter id=" + newsletter.getSheetId() + " name=" + newsletter.getName(),
   );
   Logger.log("After: " + listTabs(ss));
 }

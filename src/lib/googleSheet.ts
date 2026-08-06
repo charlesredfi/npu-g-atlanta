@@ -68,6 +68,7 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
   let parsed: {
     ok?: boolean;
     error?: string;
+    version?: string;
     sheet?: string;
     tab?: string;
     sheetId?: number;
@@ -84,6 +85,12 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
   if (!parsed.ok) {
     throw new Error(
       `Google Sheet append rejected: ${parsed.error || "unknown error"}`,
+    );
+  }
+
+  if (parsed.version !== "physical-tabs-v3") {
+    throw new Error(
+      `Google Sheet webhook is running an old script (version '${parsed.version || "unknown"}'). In Apps Script: paste latest google-sheet-webhook.gs, then Deploy → Manage deployments → pencil → New version → Deploy. Response keys: ${Object.keys(parsed).join(", ")}`,
     );
   }
 
@@ -106,5 +113,6 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
     tab,
     sheet: parsed.sheet || tab,
     sheetId: parsed.sheetId,
+    version: parsed.version,
   };
 }
