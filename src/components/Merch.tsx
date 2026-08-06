@@ -46,6 +46,7 @@ export function Merch() {
                 height={425}
                 className="h-auto w-full"
                 sizes="(max-width: 1024px) 90vw, 36rem"
+                loading="lazy"
               />
             </div>
           </div>

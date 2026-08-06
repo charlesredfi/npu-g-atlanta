@@ -39,5 +39,4 @@ First FormSubmit delivery may require confirming the email address once.
 
 - Brand mark: `public/npu-g-logo.png`
 - NPU-G photos: `public/media/` (meetings, leadership, merch)
-- Hero video: `public/media/atlanta-skyline.mp4` (Pexels, royalty-free Atlanta aerial)
-- Extra community stills: Pexels stock in `public/media/stock-community-*.jpg`
+- Priorities background video: `public/media/atlanta-skyline.mp4` (lazy-loaded near viewport)
