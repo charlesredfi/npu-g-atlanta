@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { newsletterNeighborhoods } from "@/lib/content";
 import { deliverSiteForm } from "@/lib/deliverSiteForm";
 
 const committees = [
@@ -160,12 +161,24 @@ export function Contact() {
             <span className="display text-xs tracking-[0.16em] text-white/70">
               Neighborhood
             </span>
-            <input
-              type="text"
+            <select
+              required
               name="neighborhood"
-              className="mt-2 w-full border border-white/20 bg-navy px-4 py-3 text-white outline-none focus:border-cta"
-              placeholder="e.g. West Highlands"
-            />
+              defaultValue=""
+              className="mt-2 w-full appearance-none border border-white/20 bg-navy bg-[length:12px_8px] bg-[right_1rem_center] bg-no-repeat px-4 py-3 text-white outline-none focus:border-cta"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ffffff' d='M6 8L0 0h12z'/%3E%3C/svg%3E")`,
+              }}
+            >
+              <option value="" disabled>
+                Select your neighborhood
+              </option>
+              {newsletterNeighborhoods.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="block">
             <span className="display text-xs tracking-[0.16em] text-white/70">
