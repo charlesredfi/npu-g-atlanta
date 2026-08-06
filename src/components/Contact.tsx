@@ -3,6 +3,31 @@
 import { FormEvent, useState } from "react";
 import { deliverSiteForm } from "@/lib/deliverSiteForm";
 
+const committees = [
+  {
+    title: "Land Use and Zoning Committee",
+    note: "Co-Chairs",
+    members: ["LA Williams", "Ola Reynolds"],
+    email: "info@npugatlanta.org",
+  },
+  {
+    title: "Public Safety and Code Enforcement Committee",
+    members: ["Andrew Anderson", "Nancy Atufunwa"],
+  },
+  {
+    title: "Bylaw and Policy Committee",
+    members: ["Darvin Thurman", "JoAnna Powell"],
+  },
+  {
+    title: "Parks and Recreation and Cultural Affairs Committee",
+    members: ["Nio Olutosin", "JoAnna Powell"],
+  },
+  {
+    title: "Marketing/Social Media Committee",
+    members: ["Charles Bourgeois"],
+  },
+] as const;
+
 export function Contact() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
     "idle",
@@ -60,14 +85,6 @@ export function Contact() {
               <p className="display mt-2 text-lg tracking-[0.04em] text-white">
                 Torrey Sumlin
               </p>
-              <p className="serif mt-1 text-base text-white/80">
-                <a
-                  href="tel:+16786009829"
-                  className="underline decoration-accent/60 underline-offset-4 hover:text-accent"
-                >
-                  678-600-9829
-                </a>
-              </p>
               <p className="serif text-base text-white/80">
                 <a
                   href="mailto:chair@npugatlanta.org"
@@ -84,14 +101,6 @@ export function Contact() {
               <p className="display mt-2 text-lg tracking-[0.04em] text-white">
                 Nathan Carson
               </p>
-              <p className="serif mt-1 text-base text-white/80">
-                <a
-                  href="tel:+16783819481"
-                  className="underline decoration-accent/60 underline-offset-4 hover:text-accent"
-                >
-                  678-381-9481
-                </a>
-              </p>
               <p className="serif text-base text-white/80">
                 <a
                   href="mailto:NATCarson@atlantaga.gov"
@@ -103,42 +112,10 @@ export function Contact() {
             </li>
             <li>
               <p className="display text-xs tracking-[0.18em] text-accent">
-                Zoning Representative
-              </p>
-              <p className="display mt-2 text-lg tracking-[0.04em] text-white">
-                LA Williams &amp; Ola Reynolds
-              </p>
-              <p className="serif mt-1 text-base text-white/80">
-                <a
-                  href="tel:+14049888990"
-                  className="underline decoration-accent/60 underline-offset-4 hover:text-accent"
-                >
-                  404-988-8990
-                </a>
-              </p>
-              <p className="serif text-base text-white/80">
-                <a
-                  href="mailto:secretary@npugatlanta.org"
-                  className="underline decoration-accent/60 underline-offset-4 hover:text-accent"
-                >
-                  secretary@npugatlanta.org
-                </a>
-              </p>
-            </li>
-            <li>
-              <p className="display text-xs tracking-[0.18em] text-accent">
                 DCP Director
               </p>
               <p className="display mt-2 text-lg tracking-[0.04em] text-white">
                 Leah LaRue
-              </p>
-              <p className="serif mt-1 text-base text-white/80">
-                <a
-                  href="tel:+14045460159"
-                  className="underline decoration-accent/60 underline-offset-4 hover:text-accent"
-                >
-                  404-546-0159
-                </a>
               </p>
               <p className="serif text-base text-white/80">
                 <a
@@ -150,10 +127,50 @@ export function Contact() {
               </p>
             </li>
           </ul>
+
+          <div className="mt-10 border-t border-white/15 pt-8">
+            <p className="display text-sm tracking-[0.22em] text-accent">
+              Committees
+            </p>
+            <ul className="mt-6 space-y-6">
+              {committees.map((committee) => (
+                <li key={committee.title}>
+                  <p className="display text-xs tracking-[0.18em] text-accent">
+                    {committee.title}
+                  </p>
+                  {"note" in committee && committee.note ? (
+                    <p className="display mt-2 text-sm tracking-[0.08em] text-white/60">
+                      {committee.note}
+                    </p>
+                  ) : null}
+                  <ul className="mt-2 space-y-1">
+                    {committee.members.map((member) => (
+                      <li
+                        key={`${committee.title}-${member}`}
+                        className="display text-lg tracking-[0.04em] text-white"
+                      >
+                        {member}
+                      </li>
+                    ))}
+                  </ul>
+                  {"email" in committee && committee.email ? (
+                    <p className="serif mt-2 text-base text-white/80">
+                      <a
+                        href={`mailto:${committee.email}`}
+                        className="underline decoration-accent/60 underline-offset-4 hover:text-accent"
+                      >
+                        {committee.email}
+                      </a>
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <form
-          className="space-y-4 border border-white/15 bg-white/5 p-6 md:p-8"
+          className="h-fit space-y-4 border border-white/15 bg-white/5 p-6 md:sticky md:top-28 md:p-8"
           onSubmit={onSubmit}
         >
           <label className="block">
