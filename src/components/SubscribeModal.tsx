@@ -106,7 +106,7 @@ export function SubscribeModal() {
             id={titleId}
             className="display mt-2.5 text-2xl leading-none tracking-[0.04em] text-white sm:text-3xl"
           >
-            Subscribe to NPU-G
+            Join our Newsletter!
           </p>
           <p className="serif mt-1.5 text-xs font-bold leading-snug text-white sm:text-sm">
             Monthly updates, meeting reminders, zoning notes, and Westside news.
