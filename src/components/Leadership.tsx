@@ -1,8 +1,6 @@
 import Image from "next/image";
 import { leadershipBoard } from "@/lib/content";
 
-const PLACEHOLDER = "/media/leader-silhouette.svg";
-
 export function Leadership() {
   return (
     <section
@@ -27,29 +25,16 @@ export function Leadership() {
 
         <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:gap-3">
           {leadershipBoard.map((member) => {
-            const src = member.image ?? PLACEHOLDER;
-            const isPlaceholder = !member.image;
-
             return (
               <li key={member.name} className="group border border-line bg-white">
                 <div className="relative aspect-[3/4] overflow-hidden bg-soft">
-                  {isPlaceholder ? (
-                    // SVG placeholders skip next/image optimization.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={PLACEHOLDER}
-                      alt={`Portrait placeholder for ${member.name}`}
-                      className="absolute inset-0 h-full w-full object-cover object-center"
-                    />
-                  ) : (
-                    <Image
-                      src={src}
-                      alt={member.name}
-                      fill
-                      className="object-cover object-top"
-                      sizes="(max-width: 1024px) 33vw, 16vw"
-                    />
-                  )}
+                  <Image
+                    src={member.image}
+                    alt={member.name}
+                    fill
+                    className="object-cover object-top"
+                    sizes="(max-width: 1024px) 33vw, 16vw"
+                  />
                 </div>
                 <div className="border-t border-line px-1.5 py-2.5 md:px-2">
                   <h3 className="display min-h-[2.4em] text-[12px] font-bold leading-snug tracking-[0.03em] text-navy sm:text-[13px] md:text-sm">
