@@ -88,7 +88,10 @@ export async function appendToGoogleSheet(entry: SheetSubmission) {
     );
   }
 
-  if (parsed.version !== "physical-tabs-v3") {
+  if (
+    parsed.version !== "physical-tabs-v3" &&
+    parsed.version !== "physical-tabs-v4"
+  ) {
     throw new Error(
       `Google Sheet webhook is running an old script (version '${parsed.version || "unknown"}'). In Apps Script: paste latest google-sheet-webhook.gs, then Deploy → Manage deployments → pencil → New version → Deploy. Response keys: ${Object.keys(parsed).join(", ")}`,
     );

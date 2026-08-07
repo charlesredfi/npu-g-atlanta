@@ -10,11 +10,12 @@
  * 2. Run ensureTabsAndHeaders
  * 3. Deploy -> Manage deployments -> pencil -> New version -> Deploy
  *
- * Correct deploy response must include: "version":"physical-tabs-v3"
+ * Correct deploy response must include: "version":"physical-tabs-v4"
  */
 
 var SPREADSHEET_ID = "10EnJmCHU2SI6VbLMNUgEzksnZRUDCj_xczr1fByXnEQ";
-var SCRIPT_VERSION = "physical-tabs-v3";
+var SCRIPT_VERSION = "physical-tabs-v4";
+var VISITOR_PROP = "uniqueVisitors";
 
 var HEADERS = [
   "Timestamp",
@@ -148,8 +149,29 @@ function errorResponse(err) {
   ).setMimeType(ContentService.MimeType.JSON);
 }
 
+function handleVisit(shouldIncrement) {
+  var props = PropertiesService.getScriptProperties();
+  var count = parseInt(props.getProperty(VISITOR_PROP) || "0", 10);
+  if (isNaN(count) || count < 0) count = 0;
+  if (shouldIncrement) {
+    count += 1;
+    props.setProperty(VISITOR_PROP, String(count));
+  }
+  return ContentService.createTextOutput(
+    JSON.stringify({
+      ok: true,
+      version: SCRIPT_VERSION,
+      visitors: count,
+    }),
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doGet(e) {
   try {
+    var params = e && e.parameter ? e.parameter : {};
+    if (params.action === "visit") {
+      return handleVisit(params.increment === "1");
+    }
     return writeRow(parseData(e));
   } catch (err) {
     return errorResponse(err);
