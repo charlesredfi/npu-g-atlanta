@@ -136,7 +136,7 @@ export const leadershipBoard = [
     name: "Torrey Sumlin",
     role: "Chairperson",
     email: "chair@npugatlanta.org",
-    image: null,
+    image: "/media/leader-torrey.png",
   },
   {
     name: "Charles Bourgeois Sr.",
