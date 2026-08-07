@@ -36,7 +36,7 @@ export function VisitorCount() {
 
   return (
     <p className="mt-2 text-[10px] leading-none tracking-wide text-muted/70">
-      Unique visitors: {visitors.toLocaleString("en-US")}
+      {visitors.toLocaleString("en-US")}
     </p>
   );
 }
